@@ -28,6 +28,9 @@ export async function generatePDFBuffer(
 	}
 
 	const element = React.createElement(TemplateComponent, { data: cvData })
-	const buffer = await renderToBuffer(element)
+	// Cast needed: renderToBuffer expects ReactElement<DocumentProps> but
+	// createElement infers FunctionComponentElement<{ data: CVData }>.
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const buffer = await renderToBuffer(element as any)
 	return Buffer.from(buffer)
 }
