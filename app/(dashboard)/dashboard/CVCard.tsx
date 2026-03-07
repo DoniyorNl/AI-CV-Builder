@@ -1,12 +1,9 @@
 'use client'
 
-import { createClient } from '@/lib/supabase/client'
+import { useDeleteCV } from '@/hooks/useCV'
 import type { CV } from '@/types/cv.types'
 import { Clock, Edit2, Eye, Layout, Trash2 } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
-import { toast } from 'sonner'
 
 const TEMPLATE_COLORS = {
 	modern: 'bg-indigo-50 text-indigo-700',
@@ -15,21 +12,11 @@ const TEMPLATE_COLORS = {
 }
 
 export function CVCard({ cv }: { cv: CV }) {
-	const [deleting, setDeleting] = useState(false)
-	const router = useRouter()
+	const deleteCV = useDeleteCV()
 
-	const handleDelete = async () => {
+	const handleDelete = () => {
 		if (!confirm('Delete this CV? This cannot be undone.')) return
-		setDeleting(true)
-		const supabase = createClient()
-		const { error } = await supabase.from('cvs').delete().eq('id', cv.id)
-		if (error) {
-			toast.error('Failed to delete CV')
-			setDeleting(false)
-			return
-		}
-		toast.success('CV deleted')
-		router.refresh()
+		deleteCV.mutate(cv.id)
 	}
 
 	const updatedAt = new Date(cv.updated_at).toLocaleDateString('en-US', {
@@ -91,7 +78,7 @@ export function CVCard({ cv }: { cv: CV }) {
 				</Link>
 				<button
 					onClick={handleDelete}
-					disabled={deleting}
+					disabled={deleteCV.isPending}
 					className='p-2 rounded-lg border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition'
 				>
 					<Trash2 className='w-3.5 h-3.5' />

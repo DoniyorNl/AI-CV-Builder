@@ -1,6 +1,7 @@
 import { sectionsToCVData } from '@/hooks/useCV'
+import { adminDB } from '@/lib/firebase/admin'
+import { getServerUser } from '@/lib/firebase/session'
 import { generatePDFBuffer } from '@/lib/pdf'
-import { createClient } from '@/lib/supabase/server'
 import type { CVData, CVSection, Template } from '@/types/cv.types'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -8,24 +9,14 @@ export const runtime = 'nodejs'
 
 export async function GET(req: NextRequest) {
 	// ── Auth ─────────────────────────────────────────────────────
-	const supabase = await createClient()
-	const {
-		data: { user },
-		error: authError,
-	} = await supabase.auth.getUser()
-
-	if (authError || !user) {
+	const user = await getServerUser()
+	if (!user) {
 		return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 	}
 
 	// ── Check Pro subscription ─────────────────────────────────
-	const { data: profile } = await supabase
-		.from('profiles')
-		.select('is_pro')
-		.eq('id', user.id)
-		.single()
-
-	const isPro = (profile as { is_pro?: boolean } | null)?.is_pro ?? false
+	const profileSnap = await adminDB().collection('users').doc(user.uid).get()
+	const isPro = (profileSnap.data()?.is_pro as boolean | undefined) ?? false
 
 	if (!isPro) {
 		return NextResponse.json(
@@ -49,31 +40,26 @@ export async function GET(req: NextRequest) {
 	}
 
 	// ── Fetch CV and verify ownership ─────────────────────────
-	const { data: cv, error: cvError } = await supabase
-		.from('cvs')
-		.select('*')
-		.eq('id', cvId)
-		.eq('user_id', user.id)
-		.single()
-
-	if (cvError || !cv) {
+	const cvSnap = await adminDB().collection('cvs').doc(cvId).get()
+	if (!cvSnap.exists || cvSnap.data()?.user_id !== user.uid) {
 		return NextResponse.json({ error: 'CV not found' }, { status: 404 })
 	}
 
 	// ── Fetch sections ────────────────────────────────────────
-	const { data: sections } = await supabase
-		.from('cv_sections')
-		.select('*')
-		.eq('cv_id', cvId)
-		.order('order_index', { ascending: true })
+	const sectionsSnap = await adminDB()
+		.collection('cv_sections')
+		.where('cv_id', '==', cvId)
+		.orderBy('order_index', 'asc')
+		.get()
 
-	const cvData: CVData = sectionsToCVData((sections ?? []) as CVSection[])
+	const sections = sectionsSnap.docs.map(d => d.data() as CVSection)
+	const cvData: CVData = sectionsToCVData(sections)
 
 	// ── Generate PDF ──────────────────────────────────────────
 	try {
 		const buffer = await generatePDFBuffer(cvData, template)
-
-		const safeTitle = (cv as { title?: string }).title?.replace(/[^a-z0-9-_ ]/gi, '') ?? 'cv'
+		const safeTitle =
+			(cvSnap.data()?.title as string | undefined)?.replace(/[^a-z0-9-_ ]/gi, '') ?? 'cv'
 
 		return new NextResponse(buffer as unknown as BodyInit, {
 			status: 200,
@@ -81,7 +67,6 @@ export async function GET(req: NextRequest) {
 				'Content-Type': 'application/pdf',
 				'Content-Disposition': `attachment; filename="${safeTitle}.pdf"`,
 				'Content-Length': String(buffer.length),
-				// Prevent caching of sensitive PDF content
 				'Cache-Control': 'no-store, no-cache, must-revalidate',
 			},
 		})

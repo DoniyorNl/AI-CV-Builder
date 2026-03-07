@@ -1,5 +1,5 @@
+import { getServerUser } from '@/lib/firebase/session'
 import { generateSection } from '@/lib/openai'
-import { createClient } from '@/lib/supabase/server'
 import type { AIGenerateRequest } from '@/types/cv.types'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -7,13 +7,8 @@ export const runtime = 'nodejs'
 
 export async function POST(req: NextRequest) {
 	// ── Auth ────────────────────────────────────────────────────
-	const supabase = await createClient()
-	const {
-		data: { user },
-		error: authError,
-	} = await supabase.auth.getUser()
-
-	if (authError || !user) {
+	const user = await getServerUser()
+	if (!user) {
 		return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 	}
 

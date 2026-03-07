@@ -1,8 +1,8 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-	// Required for @react-pdf/renderer — it uses Canvas internally
-	serverExternalPackages: ['@react-pdf/renderer'],
+	// Required for @react-pdf/renderer and firebase-admin (native Node modules)
+	serverExternalPackages: ['@react-pdf/renderer', 'firebase-admin'],
 
 	turbopack: {
 		// Pin workspace root so Next.js doesn't pick up the Desktop-level lockfile

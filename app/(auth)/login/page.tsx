@@ -1,7 +1,8 @@
 'use client'
 
-import { createClient } from '@/lib/supabase/client'
+import { auth } from '@/lib/firebase/client'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth'
 import { FileText, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -9,6 +10,15 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
+
+async function createSession(idToken: string): Promise<void> {
+	const res = await fetch('/api/auth/session', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ idToken }),
+	})
+	if (!res.ok) throw new Error('Failed to create session')
+}
 
 const loginSchema = z.object({
 	email: z.string().email('Enter a valid email'),
@@ -30,30 +40,38 @@ export default function LoginPage() {
 
 	const onSubmit = async (data: LoginForm) => {
 		setLoading(true)
-		const supabase = createClient()
-		const { error } = await supabase.auth.signInWithPassword({
-			email: data.email,
-			password: data.password,
-		})
-		setLoading(false)
-
-		if (error) {
-			toast.error(error.message)
-			return
+		try {
+			const credential = await signInWithEmailAndPassword(auth, data.email, data.password)
+			const idToken = await credential.user.getIdToken()
+			await createSession(idToken)
+			router.push('/dashboard')
+		} catch (err: unknown) {
+			const msg = err instanceof Error ? err.message : 'Sign in failed'
+			toast.error(
+				msg
+					.replace('Firebase: ', '')
+					.replace(/\s*\(auth\/.*\)\.?/, '')
+					.trim() || 'Sign in failed',
+			)
+		} finally {
+			setLoading(false)
 		}
-		router.push('/dashboard')
-		router.refresh()
 	}
 
 	const handleGoogleLogin = async () => {
 		setGoogleLoading(true)
-		const supabase = createClient()
-		const { error } = await supabase.auth.signInWithOAuth({
-			provider: 'google',
-			options: { redirectTo: `${window.location.origin}/auth/callback` },
-		})
-		if (error) {
-			toast.error(error.message)
+		try {
+			const provider = new GoogleAuthProvider()
+			const credential = await signInWithPopup(auth, provider)
+			const idToken = await credential.user.getIdToken()
+			await createSession(idToken)
+			router.push('/dashboard')
+		} catch (err: unknown) {
+			const msg = err instanceof Error ? err.message : ''
+			if (!msg.includes('popup-closed-by-user') && !msg.includes('cancelled-popup-request')) {
+				toast.error('Google sign in failed. Please try again.')
+			}
+		} finally {
 			setGoogleLoading(false)
 		}
 	}

@@ -1,54 +1,29 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 
-type CookieEntry = { name: string; value: string; options?: CookieOptions }
-
-// Routes that require authentication
 const PROTECTED_PREFIXES = ['/dashboard', '/builder', '/billing']
+const SESSION_COOKIE = '__session'
 
-export async function proxy(request: NextRequest) {
-	let supabaseResponse = NextResponse.next({ request })
-
-	const supabase = createServerClient(
-		process.env.NEXT_PUBLIC_SUPABASE_URL!,
-		process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-		{
-			cookies: {
-				getAll() {
-					return request.cookies.getAll()
-				},
-				setAll(cookiesToSet: CookieEntry[]) {
-					cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-					supabaseResponse = NextResponse.next({ request })
-					cookiesToSet.forEach(({ name, value, options }) =>
-						supabaseResponse.cookies.set(name, value, options),
-					)
-				},
-			},
-		},
-	)
-
-	// Refresh session — IMPORTANT: must call getUser() before checking
-	const {
-		data: { user },
-	} = await supabase.auth.getUser()
-
+/**
+ * Lightweight edge-compatible proxy.
+ * Only checks for session cookie presence — full token verification happens
+ * in server components and API routes via firebase-admin.
+ */
+export function proxy(request: NextRequest) {
 	const { pathname } = request.nextUrl
+	const hasSession = !!request.cookies.get(SESSION_COOKIE)?.value
 
-	// Redirect unauthenticated users away from protected routes
 	const isProtected = PROTECTED_PREFIXES.some(prefix => pathname.startsWith(prefix))
-	if (isProtected && !user) {
+	if (isProtected && !hasSession) {
 		const loginUrl = new URL('/login', request.url)
 		loginUrl.searchParams.set('from', pathname)
 		return NextResponse.redirect(loginUrl)
 	}
 
-	// Redirect authenticated users away from auth pages
-	if ((pathname === '/login' || pathname === '/register') && user) {
+	if ((pathname === '/login' || pathname === '/register') && hasSession) {
 		return NextResponse.redirect(new URL('/dashboard', request.url))
 	}
 
-	return supabaseResponse
+	return NextResponse.next()
 }
 
 export const config = {

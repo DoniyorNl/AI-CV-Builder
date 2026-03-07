@@ -1,0 +1,33 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "cvs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updated_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "cv_sections",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "cv_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "order_index",
+          "order": "ASCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

@@ -4,8 +4,9 @@ import { CVPreviewPanel } from '@/components/builder/CVPreviewPanel'
 import { TemplateSelector } from '@/components/builder/TemplateSelector'
 import { sectionsToCVData } from '@/hooks/useCV'
 import { useSubscription } from '@/hooks/useSubscription'
-import { createClient } from '@/lib/supabase/client'
+import { db } from '@/lib/firebase/client'
 import type { CV, CVSection, Template } from '@/types/cv.types'
+import { doc, updateDoc } from 'firebase/firestore'
 import { Download, Edit2, Loader2, Lock } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
@@ -25,8 +26,7 @@ export function PreviewClient({ cv, sections }: Props) {
 
 	const handleTemplateChange = async (t: Template) => {
 		setTemplate(t)
-		const supabase = createClient()
-		await supabase.from('cvs').update({ template: t }).eq('id', cv.id)
+		await updateDoc(doc(db, 'cvs', cv.id), { template: t })
 	}
 
 	const handleDownload = async () => {

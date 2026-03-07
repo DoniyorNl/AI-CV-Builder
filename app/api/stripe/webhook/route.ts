@@ -1,5 +1,5 @@
+import { adminDB } from '@/lib/firebase/admin'
 import { getStripe } from '@/lib/stripe'
-import { createServiceClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 
@@ -26,39 +26,46 @@ export async function POST(req: NextRequest) {
 	}
 
 	// ── Handle events ──────────────────────────────────────────
-	const supabase = await createServiceClient()
-
 	try {
 		switch (event.type) {
 			case 'checkout.session.completed': {
 				const session = event.data.object as Stripe.Checkout.Session
-				const userId = session.metadata?.supabase_user_id
+				const userId = session.metadata?.firebase_uid
 				if (userId) {
-					await supabase.from('profiles').update({ is_pro: true }).eq('id', userId)
+					await adminDB().collection('users').doc(userId).update({ is_pro: true })
 				}
 				break
 			}
 
 			case 'customer.subscription.deleted': {
 				const subscription = event.data.object as Stripe.Subscription
-				await supabase
-					.from('profiles')
-					.update({ is_pro: false })
-					.eq('stripe_customer_id', subscription.customer as string)
+				const customerId = subscription.customer as string
+				const snap = await adminDB()
+					.collection('users')
+					.where('stripe_customer_id', '==', customerId)
+					.limit(1)
+					.get()
+				if (!snap.empty) {
+					await snap.docs[0].ref.update({ is_pro: false })
+				}
 				break
 			}
 
 			case 'invoice.payment_failed': {
 				const invoice = event.data.object as Stripe.Invoice
-				await supabase
-					.from('profiles')
-					.update({ is_pro: false })
-					.eq('stripe_customer_id', invoice.customer as string)
+				const customerId = invoice.customer as string
+				const snap = await adminDB()
+					.collection('users')
+					.where('stripe_customer_id', '==', customerId)
+					.limit(1)
+					.get()
+				if (!snap.empty) {
+					await snap.docs[0].ref.update({ is_pro: false })
+				}
 				break
 			}
 
 			default:
-				// Ignore unhandled event types
 				break
 		}
 	} catch (err) {

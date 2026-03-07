@@ -1,22 +1,28 @@
-import { createClient } from '@/lib/supabase/server'
+import { adminDB } from '@/lib/firebase/admin'
+import { getServerUser } from '@/lib/firebase/session'
 import type { CV } from '@/types/cv.types'
 import { FileText, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { CVCard } from './CVCard'
 
 export default async function DashboardPage() {
-	const supabase = await createClient()
-	const {
-		data: { user },
-	} = await supabase.auth.getUser()
+	const user = await getServerUser()
 
-	const { data: cvs } = await supabase
-		.from('cvs')
-		.select('*')
-		.eq('user_id', user!.id)
-		.order('updated_at', { ascending: false })
+	const snap = await adminDB()
+		.collection('cvs')
+		.where('user_id', '==', user!.uid)
+		.orderBy('updated_at', 'desc')
+		.get()
 
-	const cvList = (cvs ?? []) as CV[]
+	const cvList = snap.docs.map(d => {
+		const data = d.data()
+		return {
+			...data,
+			id: d.id,
+			created_at: data.created_at?.toDate().toISOString() ?? new Date().toISOString(),
+			updated_at: data.updated_at?.toDate().toISOString() ?? new Date().toISOString(),
+		} as CV
+	})
 
 	return (
 		<div>

@@ -1,23 +1,18 @@
-import { createClient } from '@/lib/supabase/server'
+import { adminDB } from '@/lib/firebase/admin'
+import { getServerUser } from '@/lib/firebase/session'
 import { CreditCard, FileText, LogOut } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
-export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-	const supabase = await createClient()
-	const {
-		data: { user },
-	} = await supabase.auth.getUser()
+// Dashboard pages require auth — always render dynamically
+export const dynamic = 'force-dynamic'
 
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+	const user = await getServerUser()
 	if (!user) redirect('/login')
 
-	const { data: profileData } = await supabase
-		.from('profiles')
-		.select('full_name, is_pro')
-		.eq('id', user.id)
-		.single()
-
-	const profile = profileData as { full_name: string | null; is_pro: boolean } | null
+	const profileSnap = await adminDB().collection('users').doc(user.uid).get()
+	const profile = profileSnap.data() as { full_name?: string; is_pro?: boolean } | undefined
 
 	return (
 		<div className='min-h-screen bg-gray-50'>
