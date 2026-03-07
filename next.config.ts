@@ -4,6 +4,11 @@ const nextConfig: NextConfig = {
 	// Required for @react-pdf/renderer — it uses Canvas internally
 	serverExternalPackages: ['@react-pdf/renderer'],
 
+	turbopack: {
+		// Pin workspace root so Next.js doesn't pick up the Desktop-level lockfile
+		root: __dirname,
+	},
+
 	// Security headers
 	async headers() {
 		return [

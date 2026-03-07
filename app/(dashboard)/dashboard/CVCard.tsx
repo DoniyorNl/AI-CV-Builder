@@ -17,11 +17,11 @@ const TEMPLATE_COLORS = {
 export function CVCard({ cv }: { cv: CV }) {
 	const [deleting, setDeleting] = useState(false)
 	const router = useRouter()
-	const supabase = createClient()
 
 	const handleDelete = async () => {
 		if (!confirm('Delete this CV? This cannot be undone.')) return
 		setDeleting(true)
+		const supabase = createClient()
 		const { error } = await supabase.from('cvs').delete().eq('id', cv.id)
 		if (error) {
 			toast.error('Failed to delete CV')

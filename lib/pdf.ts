@@ -1,4 +1,6 @@
 import type { CVData } from '@/types/cv.types'
+import type { DocumentProps } from '@react-pdf/renderer'
+import type { ReactElement } from 'react'
 
 /**
  * Called server-side inside the /api/cv/export route.
@@ -28,9 +30,9 @@ export async function generatePDFBuffer(
 	}
 
 	const element = React.createElement(TemplateComponent, { data: cvData })
-	// Cast needed: renderToBuffer expects ReactElement<DocumentProps> but
-	// createElement infers FunctionComponentElement<{ data: CVData }>.
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const buffer = await renderToBuffer(element as any)
+	// React-PDF's renderToBuffer expects ReactElement<DocumentProps>. Each
+	// template wraps content in <Document>, but createElement infers the
+	// component's own prop type. We assert via the shared interface.
+	const buffer = await renderToBuffer(element as ReactElement<DocumentProps>)
 	return Buffer.from(buffer)
 }

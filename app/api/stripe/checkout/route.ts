@@ -1,4 +1,4 @@
-import { stripe, STRIPE_PRICE_ID } from '@/lib/stripe'
+import { getStripe, STRIPE_PRICE_ID } from '@/lib/stripe'
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
 	let customerId = profile?.stripe_customer_id
 
 	if (!customerId) {
-		const customer = await stripe.customers.create({
+		const customer = await getStripe().customers.create({
 			email: user.email,
 			name: profile?.full_name ?? undefined,
 			metadata: { supabase_user_id: user.id },
@@ -34,17 +34,14 @@ export async function POST(req: NextRequest) {
 		customerId = customer.id
 
 		// Persist customer ID
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		await (supabase.from('profiles') as any)
-			.update({ stripe_customer_id: customerId })
-			.eq('id', user.id)
+		await supabase.from('profiles').update({ stripe_customer_id: customerId }).eq('id', user.id)
 	}
 
 	// ── Create Stripe Checkout Session ─────────────────────────
 	const origin =
 		req.headers.get('origin') ?? process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
-	const session = await stripe.checkout.sessions.create({
+	const session = await getStripe().checkout.sessions.create({
 		customer: customerId,
 		payment_method_types: ['card'],
 		line_items: [

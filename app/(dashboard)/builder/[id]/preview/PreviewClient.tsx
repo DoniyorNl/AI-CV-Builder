@@ -22,12 +22,11 @@ export function PreviewClient({ cv, sections }: Props) {
 	const { data: sub } = useSubscription()
 
 	const cvData = sectionsToCVData(sections)
-	const supabase = createClient()
 
 	const handleTemplateChange = async (t: Template) => {
 		setTemplate(t)
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		await (supabase.from('cvs') as any).update({ template: t }).eq('id', cv.id)
+		const supabase = createClient()
+		await supabase.from('cvs').update({ template: t }).eq('id', cv.id)
 	}
 
 	const handleDownload = async () => {

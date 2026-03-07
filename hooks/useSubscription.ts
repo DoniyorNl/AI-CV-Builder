@@ -3,12 +3,11 @@
 import { createClient } from '@/lib/supabase/client'
 import { useQuery } from '@tanstack/react-query'
 
-const supabase = createClient()
-
 export function useSubscription() {
 	return useQuery({
 		queryKey: ['subscription'],
 		queryFn: async () => {
+			const supabase = createClient()
 			const {
 				data: { user },
 				error: userError,

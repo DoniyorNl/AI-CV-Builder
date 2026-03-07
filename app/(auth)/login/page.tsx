@@ -21,7 +21,6 @@ export default function LoginPage() {
 	const [loading, setLoading] = useState(false)
 	const [googleLoading, setGoogleLoading] = useState(false)
 	const router = useRouter()
-	const supabase = createClient()
 
 	const {
 		register,
@@ -31,6 +30,7 @@ export default function LoginPage() {
 
 	const onSubmit = async (data: LoginForm) => {
 		setLoading(true)
+		const supabase = createClient()
 		const { error } = await supabase.auth.signInWithPassword({
 			email: data.email,
 			password: data.password,
@@ -47,6 +47,7 @@ export default function LoginPage() {
 
 	const handleGoogleLogin = async () => {
 		setGoogleLoading(true)
+		const supabase = createClient()
 		const { error } = await supabase.auth.signInWithOAuth({
 			provider: 'google',
 			options: { redirectTo: `${window.location.origin}/auth/callback` },

@@ -27,7 +27,6 @@ type RegisterForm = z.infer<typeof registerSchema>
 export default function RegisterPage() {
 	const [loading, setLoading] = useState(false)
 	const router = useRouter()
-	const supabase = createClient()
 
 	const {
 		register,
@@ -37,6 +36,7 @@ export default function RegisterPage() {
 
 	const onSubmit = async (data: RegisterForm) => {
 		setLoading(true)
+		const supabase = createClient()
 		const { error } = await supabase.auth.signUp({
 			email: data.email,
 			password: data.password,

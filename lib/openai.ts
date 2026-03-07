@@ -1,9 +1,18 @@
 import type { CVData, ExperienceItem, SectionContent, SectionType } from '@/types/cv.types'
 import OpenAI from 'openai'
 
-export const openai = new OpenAI({
-	apiKey: process.env.OPENAI_API_KEY,
-})
+// Lazily instantiated so the build doesn't fail without OPENAI_API_KEY
+let _openai: OpenAI | null = null
+
+function getOpenAI(): OpenAI {
+	if (!_openai) {
+		if (!process.env.OPENAI_API_KEY) {
+			throw new Error('OPENAI_API_KEY environment variable is not set')
+		}
+		_openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+	}
+	return _openai
+}
 
 // ─── Prompt builders ────────────────────────────────────────
 
@@ -39,7 +48,7 @@ Requirements:
 // ─── Generation functions ────────────────────────────────────
 
 export async function generateSummary(rawText: string, context?: Partial<CVData>): Promise<string> {
-	const response = await openai.chat.completions.create({
+	const response = await getOpenAI().chat.completions.create({
 		model: 'gpt-4o',
 		messages: [{ role: 'user', content: buildSummaryPrompt(rawText, context) }],
 		temperature: 0.7,
@@ -50,7 +59,7 @@ export async function generateSummary(rawText: string, context?: Partial<CVData>
 }
 
 export async function generateExperienceBullets(item: ExperienceItem): Promise<string[]> {
-	const response = await openai.chat.completions.create({
+	const response = await getOpenAI().chat.completions.create({
 		model: 'gpt-4o',
 		response_format: { type: 'json_object' },
 		messages: [

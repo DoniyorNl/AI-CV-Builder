@@ -6,13 +6,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
-const supabase = createClient()
-
 // ─── Fetch all CVs for the current user ─────────────────────
 export function useCVList() {
 	return useQuery({
 		queryKey: ['cvs'],
 		queryFn: async () => {
+			const supabase = createClient()
 			const { data, error } = await supabase
 				.from('cvs')
 				.select('*')
@@ -29,6 +28,7 @@ export function useCV(cvId: string) {
 	return useQuery({
 		queryKey: ['cv', cvId],
 		queryFn: async () => {
+			const supabase = createClient()
 			const { data: cv, error: cvError } = await supabase
 				.from('cvs')
 				.select('*')
@@ -58,6 +58,7 @@ export function useCreateCV() {
 
 	return useMutation({
 		mutationFn: async (title: string) => {
+			const supabase = createClient()
 			const {
 				data: { user },
 			} = await supabase.auth.getUser()
@@ -111,6 +112,7 @@ export function useUpdateCV(cvId: string) {
 
 	return useMutation({
 		mutationFn: async (updates: Partial<Pick<CV, 'title' | 'template' | 'status'>>) => {
+			const supabase = createClient()
 			const { error } = await supabase.from('cvs').update(updates).eq('id', cvId)
 
 			if (error) throw error
@@ -128,6 +130,7 @@ export function useUpdateSection(cvId: string) {
 
 	return useMutation({
 		mutationFn: async ({ sectionId, content }: { sectionId: string; content: object }) => {
+			const supabase = createClient()
 			const { error } = await supabase.from('cv_sections').update({ content }).eq('id', sectionId)
 
 			if (error) throw error
@@ -144,6 +147,7 @@ export function useDeleteCV() {
 
 	return useMutation({
 		mutationFn: async (cvId: string) => {
+			const supabase = createClient()
 			const { error } = await supabase.from('cvs').delete().eq('id', cvId)
 
 			if (error) throw error
