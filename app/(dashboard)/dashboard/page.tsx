@@ -8,21 +8,26 @@ import { CVCard } from './CVCard'
 export default async function DashboardPage() {
 	const user = await getServerUser()
 
-	const snap = await adminDB()
-		.collection('cvs')
-		.where('user_id', '==', user!.uid)
-		.orderBy('updated_at', 'desc')
-		.get()
+	let cvList: CV[] = []
+	try {
+		const snap = await adminDB()
+			.collection('cvs')
+			.where('user_id', '==', user!.uid)
+			.orderBy('updated_at', 'desc')
+			.get()
 
-	const cvList = snap.docs.map(d => {
-		const data = d.data()
-		return {
-			...data,
-			id: d.id,
-			created_at: data.created_at?.toDate().toISOString() ?? new Date().toISOString(),
-			updated_at: data.updated_at?.toDate().toISOString() ?? new Date().toISOString(),
-		} as CV
-	})
+		cvList = snap.docs.map(d => {
+			const data = d.data()
+			return {
+				...data,
+				id: d.id,
+				created_at: data.created_at?.toDate().toISOString() ?? new Date().toISOString(),
+				updated_at: data.updated_at?.toDate().toISOString() ?? new Date().toISOString(),
+			} as CV
+		})
+	} catch {
+		// Firestore may not be ready or collection doesn't exist yet — show empty state
+	}
 
 	return (
 		<div>

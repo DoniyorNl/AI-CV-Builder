@@ -1,22 +1,22 @@
 'use client'
 
 import { auth } from '@/lib/firebase/client'
+import { getAuthErrorMessage } from '@/lib/utils'
 import { zodResolver } from '@hookform/resolvers/zod'
-import type { AuthCredential } from 'firebase/auth'
 import {
-	fetchSignInMethodsForEmail,
 	GithubAuthProvider,
 	GoogleAuthProvider,
 	linkWithCredential,
+	sendPasswordResetEmail,
 	signInWithEmailAndPassword,
 	signInWithPopup,
+	type AuthCredential,
 } from 'firebase/auth'
 import { FileText, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { getAuthErrorMessage } from '@/lib/utils'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
@@ -46,46 +46,63 @@ export default function LoginPage() {
 	const [loading, setLoading] = useState(false)
 	const [googleLoading, setGoogleLoading] = useState(false)
 	const [githubLoading, setGithubLoading] = useState(false)
-	const [linkPassword, setLinkPassword] = useState('')
-	const [linkPasswordLoading, setLinkPasswordLoading] = useState(false)
-	// Account linking: when user tried OAuth but email exists with another provider
-	const [pendingLink, setPendingLink] = useState<{
-		credential: AuthCredential
-		email: string
-		methods: string[]
-		newProviderName: string
-	} | null>(null)
+	const [resetLoading, setResetLoading] = useState(false)
 
 	const router = useRouter()
 
 	const {
 		register,
 		handleSubmit,
+		watch,
 		formState: { errors },
 	} = useForm<LoginForm>({ resolver: zodResolver(loginSchema) })
 
 	async function finishSignIn(user: { getIdToken: () => Promise<string> }) {
 		const idToken = await user.getIdToken()
 		await createSession(idToken)
-		setPendingLink(null)
 		router.push('/dashboard')
+	}
+
+	/** Try auto-linking: sign in with the other OAuth provider, then link the pending credential */
+	async function autoLinkWithProvider(
+		pendingCredential: AuthCredential,
+		providerToTry: 'google' | 'github',
+	): Promise<boolean> {
+		try {
+			const provider =
+				providerToTry === 'google' ? new GoogleAuthProvider() : new GithubAuthProvider()
+			toast.info(
+				`Signing in with ${providerToTry === 'google' ? 'Google' : 'GitHub'} to link your accounts...`,
+			)
+			const result = await signInWithPopup(auth, provider)
+			await linkWithCredential(result.user, pendingCredential)
+			await finishSignIn(auth.currentUser!)
+			toast.success('Accounts linked successfully!')
+			return true
+		} catch {
+			return false
+		}
 	}
 
 	const onSubmit = async (data: LoginForm) => {
 		setLoading(true)
 		try {
 			const credential = await signInWithEmailAndPassword(auth, data.email, data.password)
-			const idToken = await credential.user.getIdToken()
-			await createSession(idToken)
-			router.push('/dashboard')
+			await finishSignIn(credential.user)
 		} catch (err: unknown) {
-			const msg = err instanceof Error ? err.message : 'Sign in failed'
-			toast.error(
-				msg
-					.replace('Firebase: ', '')
-					.replace(/\s*\(auth\/.*\)\.?/, '')
-					.trim() || 'Sign in failed',
-			)
+			const code = (err as { code?: string })?.code ?? ''
+			if (
+				code === 'auth/invalid-credential' ||
+				code === 'auth/wrong-password' ||
+				code === 'auth/user-not-found'
+			) {
+				toast.error(
+					'Wrong email or password. If you signed up with Google/GitHub, use those buttons above or click "Forgot password?" to set a password.',
+				)
+			} else {
+				const msg = getAuthErrorMessage(err)
+				toast.error(msg || 'Sign in failed')
+			}
 		} finally {
 			setLoading(false)
 		}
@@ -96,24 +113,21 @@ export default function LoginPage() {
 		try {
 			const provider = new GoogleAuthProvider()
 			const credential = await signInWithPopup(auth, provider)
-			let user = credential.user
-			if (pendingLink) {
-				await linkWithCredential(user, pendingLink.credential)
-				user = auth.currentUser!
-			}
-			await finishSignIn(user)
+			await finishSignIn(credential.user)
 		} catch (err: unknown) {
-			const e = err as { code?: string; customData?: { email?: string }; credential?: AuthCredential; email?: string }
-			const email = e?.customData?.email ?? e?.email
-			if (e?.code === ACCOUNT_EXISTS_CODE && e?.credential && email) {
-				const methods = await fetchSignInMethodsForEmail(auth, email)
-				setPendingLink({
-					credential: e.credential,
-					email,
-					methods,
-					newProviderName: 'Google',
-				})
-				toast.info('This email is already registered. Sign in with your existing method below to link your Google account.')
+			const e = err as { code?: string; customData?: { email?: string } }
+			const email = e?.customData?.email
+			const oauthCredential = GoogleAuthProvider.credentialFromError(
+				err as Parameters<typeof GoogleAuthProvider.credentialFromError>[0],
+			)
+			if (e?.code === ACCOUNT_EXISTS_CODE && oauthCredential && email) {
+				// Auto-link: try signing in with GitHub, then link Google credential
+				const linked = await autoLinkWithProvider(oauthCredential, 'github')
+				if (!linked) {
+					toast.error(
+						'Could not auto-link. Try signing in with GitHub manually, then try Google again.',
+					)
+				}
 			} else {
 				const msg = getAuthErrorMessage(err)
 				if (msg) toast.error(msg)
@@ -128,24 +142,21 @@ export default function LoginPage() {
 		try {
 			const provider = new GithubAuthProvider()
 			const credential = await signInWithPopup(auth, provider)
-			let user = credential.user
-			if (pendingLink) {
-				await linkWithCredential(user, pendingLink.credential)
-				user = auth.currentUser!
-			}
-			await finishSignIn(user)
+			await finishSignIn(credential.user)
 		} catch (err: unknown) {
-			const e = err as { code?: string; customData?: { email?: string }; credential?: AuthCredential; email?: string }
-			const email = e?.customData?.email ?? e?.email
-			if (e?.code === ACCOUNT_EXISTS_CODE && e?.credential && email) {
-				const methods = await fetchSignInMethodsForEmail(auth, email)
-				setPendingLink({
-					credential: e.credential,
-					email,
-					methods,
-					newProviderName: 'GitHub',
-				})
-				toast.info('This email is already registered. Sign in with your existing method below to link your GitHub account.')
+			const e = err as { code?: string; customData?: { email?: string } }
+			const email = e?.customData?.email
+			const oauthCredential = GithubAuthProvider.credentialFromError(
+				err as Parameters<typeof GithubAuthProvider.credentialFromError>[0],
+			)
+			if (e?.code === ACCOUNT_EXISTS_CODE && oauthCredential && email) {
+				// Auto-link: try signing in with Google, then link GitHub credential
+				const linked = await autoLinkWithProvider(oauthCredential, 'google')
+				if (!linked) {
+					toast.error(
+						'Could not auto-link. Try signing in with Google manually, then try GitHub again.',
+					)
+				}
 			} else {
 				const msg = getAuthErrorMessage(err)
 				if (msg) toast.error(msg)
@@ -155,19 +166,21 @@ export default function LoginPage() {
 		}
 	}
 
-	const handleLinkWithPassword = async (e: React.FormEvent) => {
-		e.preventDefault()
-		if (!pendingLink || !linkPassword.trim()) return
-		setLinkPasswordLoading(true)
+	const handleForgotPassword = async () => {
+		const email = watch('email')
+		if (!email?.trim()) {
+			toast.error('Enter your email address first, then click "Forgot password?"')
+			return
+		}
+		setResetLoading(true)
 		try {
-			const credential = await signInWithEmailAndPassword(auth, pendingLink.email, linkPassword)
-			await linkWithCredential(credential.user, pendingLink.credential)
-			await finishSignIn(auth.currentUser!)
-		} catch (err: unknown) {
-			const msg = getAuthErrorMessage(err) || 'Wrong password or account not found.'
-			toast.error(msg)
+			await sendPasswordResetEmail(auth, email)
+			toast.success(`Password reset link sent to ${email}. Check your inbox!`)
+		} catch {
+			// Don't reveal whether email exists (email enumeration protection)
+			toast.success(`If ${email} is registered, a password reset link has been sent.`)
 		} finally {
-			setLinkPasswordLoading(false)
+			setResetLoading(false)
 		}
 	}
 
@@ -184,82 +197,6 @@ export default function LoginPage() {
 				</div>
 
 				<div className='bg-white rounded-2xl shadow-sm border border-gray-200 p-8'>
-					{/* Account linking: sign in with existing method to link the new provider */}
-					{pendingLink && (
-						<div className='mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl'>
-							<p className='text-sm text-amber-800 font-medium mb-1'>Link your account</p>
-							<p className='text-sm text-amber-700 mb-3'>
-								{pendingLink.email} is already registered. Sign in with your existing method to add {pendingLink.newProviderName}.
-							</p>
-							{pendingLink.methods.includes('password') && (
-								<form onSubmit={handleLinkWithPassword} className='space-y-2 mb-3'>
-									<input
-										type='email'
-										value={pendingLink.email}
-										readOnly
-										className='w-full border border-amber-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-700'
-									/>
-									<input
-										type='password'
-										value={linkPassword}
-										onChange={e => setLinkPassword(e.target.value)}
-										placeholder='Your password'
-										className='w-full border border-amber-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500'
-									/>
-									<div className='flex gap-2'>
-										<button
-											type='submit'
-											disabled={linkPasswordLoading}
-											className='flex-1 flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg px-3 py-2 text-sm font-medium disabled:opacity-60'
-										>
-											{linkPasswordLoading && <Loader2 className='w-4 h-4 animate-spin' />}
-											Link and sign in
-										</button>
-										<button
-											type='button'
-											onClick={() => { setPendingLink(null); setLinkPassword('') }}
-											className='px-3 py-2 text-sm text-amber-700 hover:bg-amber-100 rounded-lg'
-										>
-											Cancel
-										</button>
-									</div>
-								</form>
-							)}
-							{!pendingLink.methods.includes('password') && (
-								<p className='text-sm text-amber-700 mb-2'>Sign in with the same method you used when you first registered:</p>
-							)}
-							{pendingLink.methods.includes('google.com') && (
-								<button
-									type='button'
-									onClick={handleGoogleLogin}
-									disabled={googleLoading}
-									className='w-full mb-2 flex items-center justify-center gap-2 border border-amber-300 rounded-lg px-3 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100'
-								>
-									{googleLoading ? <Loader2 className='w-4 h-4 animate-spin' /> : 'Sign in with Google to link'}
-								</button>
-							)}
-							{pendingLink.methods.includes('github.com') && (
-								<button
-									type='button'
-									onClick={handleGitHubLogin}
-									disabled={githubLoading}
-									className='w-full flex items-center justify-center gap-2 border border-amber-300 rounded-lg px-3 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100'
-								>
-									{githubLoading ? <Loader2 className='w-4 h-4 animate-spin' /> : 'Sign in with GitHub to link'}
-								</button>
-							)}
-							{!pendingLink.methods.includes('password') && (
-								<button
-									type='button'
-									onClick={() => setPendingLink(null)}
-									className='mt-2 w-full px-3 py-2 text-sm text-amber-600 hover:bg-amber-50 rounded-lg'
-								>
-									Cancel
-								</button>
-							)}
-						</div>
-					)}
-
 					{/* Google OAuth */}
 					<button
 						onClick={handleGoogleLogin}
@@ -323,18 +260,28 @@ export default function LoginPage() {
 							<input
 								type='email'
 								{...register('email')}
-								className='w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
+								className='w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
 								placeholder='you@example.com'
 							/>
 							{errors.email && <p className='text-red-500 text-xs mt-1'>{errors.email.message}</p>}
 						</div>
 
 						<div>
-							<label className='block text-sm font-medium text-gray-700 mb-1'>Password</label>
+							<div className='flex items-center justify-between mb-1'>
+								<label className='block text-sm font-medium text-gray-700'>Password</label>
+								<button
+									type='button'
+									onClick={handleForgotPassword}
+									disabled={resetLoading}
+									className='text-xs text-indigo-600 hover:text-indigo-700 hover:underline font-medium disabled:opacity-60'
+								>
+									{resetLoading ? 'Sending...' : 'Forgot password?'}
+								</button>
+							</div>
 							<input
 								type='password'
 								{...register('password')}
-								className='w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
+								className='w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
 								placeholder='••••••••'
 							/>
 							{errors.password && (

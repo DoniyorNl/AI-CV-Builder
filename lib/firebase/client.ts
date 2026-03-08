@@ -8,7 +8,7 @@ function getFirebaseConfig() {
 	const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
 	if (!apiKey?.trim() || !authDomain?.trim() || !projectId?.trim()) {
 		throw new Error(
-			'Firebase is not configured. Set NEXT_PUBLIC_FIREBASE_API_KEY, NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN, and NEXT_PUBLIC_FIREBASE_PROJECT_ID in .env.local (or Vercel → Settings → Environment Variables).'
+			'Firebase is not configured. Set NEXT_PUBLIC_FIREBASE_API_KEY, NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN, and NEXT_PUBLIC_FIREBASE_PROJECT_ID in .env.local (or Vercel → Settings → Environment Variables).',
 		)
 	}
 	return {
@@ -43,18 +43,8 @@ export function getClientDB(): Firestore {
 	return _db
 }
 
-// Re-export lazy proxy instances typed as Auth / Firestore so existing
-// import sites don't need to change.
-// Properties are only resolved (and Firebase only initialized) when first
-// accessed — which always happens in the browser, never during SSR.
-export const auth: Auth = new Proxy({} as Auth, {
-	get(_, prop: string | symbol) {
-		return (getClientAuth() as unknown as Record<string | symbol, unknown>)[prop]
-	},
-})
-
-export const db: Firestore = new Proxy({} as Firestore, {
-	get(_, prop: string | symbol) {
-		return (getClientDB() as unknown as Record<string | symbol, unknown>)[prop]
-	},
-})
+// Eagerly initialise in the browser; during SSR / build the exports are null
+// (which is fine — client hooks only use them inside event handlers or
+// React-Query functions that run exclusively in the browser).
+export const auth: Auth = (typeof window !== 'undefined' ? getClientAuth() : null) as Auth
+export const db: Firestore = (typeof window !== 'undefined' ? getClientDB() : null) as Firestore

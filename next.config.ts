@@ -11,14 +11,35 @@ const nextConfig: NextConfig = {
 
 	// Security headers
 	async headers() {
+		const baseHeaders = [
+			{ key: 'X-Content-Type-Options', value: 'nosniff' },
+			{ key: 'X-Frame-Options', value: 'DENY' },
+			{ key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+		]
+
 		return [
+			// Auth pages use signInWithPopup — Google/GitHub OAuth pages respond with
+			// COOP: same-origin which causes the browser to isolate the popup into a
+			// separate browsing context group.  When that happens the Firebase SDK
+			// cannot check popup.closed or call popup.close(), producing the
+			// "Cross-Origin-Opener-Policy policy would block the window.closed call"
+			// console errors and a broken OAuth flow.  Setting unsafe-none on these
+			// two pages (which contain no sensitive authenticated content) allows the
+			// popup ↔ opener communication required by signInWithPopup.
+			{
+				source: '/login',
+				headers: [...baseHeaders, { key: 'Cross-Origin-Opener-Policy', value: 'unsafe-none' }],
+			},
+			{
+				source: '/register',
+				headers: [...baseHeaders, { key: 'Cross-Origin-Opener-Policy', value: 'unsafe-none' }],
+			},
+			// All other pages: allow popups opened by this page to keep a reference
+			// to window.opener (needed if any other OAuth flow is triggered elsewhere).
 			{
 				source: '/(.*)',
 				headers: [
-					{ key: 'X-Content-Type-Options', value: 'nosniff' },
-					{ key: 'X-Frame-Options', value: 'DENY' },
-					{ key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-					// Required for Firebase/Google/GitHub OAuth popup — allows popup to communicate with opener
+					...baseHeaders,
 					{ key: 'Cross-Origin-Opener-Policy', value: 'same-origin-allow-popups' },
 				],
 			},

@@ -11,8 +11,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
 	const user = await getServerUser()
 	if (!user) redirect('/login')
 
-	const profileSnap = await adminDB().collection('users').doc(user.uid).get()
-	const profile = profileSnap.data() as { full_name?: string; is_pro?: boolean } | undefined
+	let profile: { full_name?: string; is_pro?: boolean } | undefined
+	try {
+		const profileSnap = await adminDB().collection('users').doc(user.uid).get()
+		profile = profileSnap.data() as typeof profile
+	} catch {
+		// Firestore may not be ready yet or the document doesn't exist — continue with defaults
+	}
 
 	return (
 		<div className='min-h-screen bg-gray-50'>

@@ -159,7 +159,11 @@ export function useCreateCV() {
 			queryClient.invalidateQueries({ queryKey: ['cvs'] })
 			router.push(`/builder/${cv.id}/edit`)
 		},
-		onError: () => toast.error('Failed to create CV'),
+		onError: (err: unknown) => {
+			console.error('Create CV error:', err)
+			const msg = err instanceof Error ? err.message : 'Unknown error'
+			toast.error(`Failed to create CV: ${msg}`)
+		},
 	})
 }
 
