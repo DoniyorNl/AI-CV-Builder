@@ -15,7 +15,9 @@ export async function POST(req: NextRequest) {
 		if (!process.env.FIREBASE_ADMIN_PROJECT_ID || !process.env.FIREBASE_ADMIN_PRIVATE_KEY) {
 			console.error('[auth/session] Missing FIREBASE_ADMIN_PROJECT_ID or FIREBASE_ADMIN_PRIVATE_KEY')
 			return NextResponse.json(
-				{ error: 'Server misconfigured: Firebase Admin env vars not set' },
+				{
+					error: 'Server misconfigured: Firebase Admin env vars not set. Add FIREBASE_ADMIN_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL, FIREBASE_ADMIN_PRIVATE_KEY in Vercel → Settings → Environment Variables, then redeploy.',
+				},
 				{ status: 500 },
 			)
 		}
