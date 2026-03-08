@@ -28,7 +28,7 @@ cp .env.local.example .env.local
 \`\`\`
 
 ### 3. Firebase Setup
-Create a Firebase project, enable Auth (Email/Password, Google) and Firestore. Add Firestore security rules; the `users` collection is created on first sign-up. Use Firebase Admin SDK credentials for server-side APIs.
+Create a Firebase project, enable Auth (Email/Password, Google, GitHub) and Firestore. **For OAuth (Google/GitHub) on production:** add your domain (e.g. `ai-cv-builder-bay.vercel.app`) in [Firebase Console](https://console.firebase.google.com/) → Authentication → Settings → **Authorized domains**. Add Firestore security rules; the `users` collection is created on first sign-up. Use Firebase Admin SDK credentials for server-side APIs.
 
 ### 4. Stripe Setup
 1. Create Product "Pro Plan" with $9/mo recurring price
