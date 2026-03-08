@@ -17,7 +17,11 @@ async function createSession(idToken: string): Promise<void> {
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({ idToken }),
 	})
-	if (!res.ok) throw new Error('Failed to create session')
+	if (!res.ok) {
+		const data = await res.json().catch(() => ({}))
+		const msg = (data as { error?: string }).error ?? res.statusText
+		throw new Error(msg)
+	}
 }
 
 const loginSchema = z.object({
@@ -70,7 +74,7 @@ export default function LoginPage() {
 		} catch (err: unknown) {
 			const msg = err instanceof Error ? err.message : ''
 			if (!msg.includes('popup-closed-by-user') && !msg.includes('cancelled-popup-request')) {
-				toast.error('Google sign in failed. Please try again.')
+				toast.error(msg || 'Google sign in failed. Please try again.')
 			}
 		} finally {
 			setGoogleLoading(false)
@@ -88,7 +92,7 @@ export default function LoginPage() {
 		} catch (err: unknown) {
 			const msg = err instanceof Error ? err.message : ''
 			if (!msg.includes('popup-closed-by-user') && !msg.includes('cancelled-popup-request')) {
-				toast.error('GitHub sign in failed. Please try again.')
+				toast.error(msg || 'GitHub sign in failed. Please try again.')
 			}
 		} finally {
 			setGithubLoading(false)

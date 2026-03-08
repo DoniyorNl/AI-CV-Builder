@@ -106,13 +106,16 @@ export default function RegisterPage() {
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ idToken }),
 			})
-			if (!res.ok) throw new Error('Session creation failed')
+			if (!res.ok) {
+				const data = await res.json().catch(() => ({}))
+				throw new Error((data as { error?: string }).error ?? res.statusText)
+			}
 
 			router.push('/dashboard')
 		} catch (err: unknown) {
 			const msg = err instanceof Error ? err.message : ''
 			if (!msg.includes('popup-closed-by-user') && !msg.includes('cancelled-popup-request')) {
-				toast.error('Google sign up failed. Please try again.')
+				toast.error(msg || 'Google sign up failed. Please try again.')
 			}
 		} finally {
 			setLoading(false)
@@ -144,13 +147,16 @@ export default function RegisterPage() {
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ idToken }),
 			})
-			if (!res.ok) throw new Error('Session creation failed')
+			if (!res.ok) {
+				const data = await res.json().catch(() => ({}))
+				throw new Error((data as { error?: string }).error ?? res.statusText)
+			}
 
 			router.push('/dashboard')
 		} catch (err: unknown) {
 			const msg = err instanceof Error ? err.message : ''
 			if (!msg.includes('popup-closed-by-user') && !msg.includes('cancelled-popup-request')) {
-				toast.error('GitHub sign up failed. Please try again.')
+				toast.error(msg || 'GitHub sign up failed. Please try again.')
 			}
 		} finally {
 			setLoading(false)
