@@ -2,12 +2,21 @@
 
 import { auth } from '@/lib/firebase/client'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { GithubAuthProvider, GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth'
+import type { AuthCredential } from 'firebase/auth'
+import {
+	fetchSignInMethodsForEmail,
+	GithubAuthProvider,
+	GoogleAuthProvider,
+	linkWithCredential,
+	signInWithEmailAndPassword,
+	signInWithPopup,
+} from 'firebase/auth'
 import { FileText, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { getAuthErrorMessage } from '@/lib/utils'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
@@ -31,10 +40,22 @@ const loginSchema = z.object({
 
 type LoginForm = z.infer<typeof loginSchema>
 
+const ACCOUNT_EXISTS_CODE = 'auth/account-exists-with-different-credential'
+
 export default function LoginPage() {
 	const [loading, setLoading] = useState(false)
 	const [googleLoading, setGoogleLoading] = useState(false)
 	const [githubLoading, setGithubLoading] = useState(false)
+	const [linkPassword, setLinkPassword] = useState('')
+	const [linkPasswordLoading, setLinkPasswordLoading] = useState(false)
+	// Account linking: when user tried OAuth but email exists with another provider
+	const [pendingLink, setPendingLink] = useState<{
+		credential: AuthCredential
+		email: string
+		methods: string[]
+		newProviderName: string
+	} | null>(null)
+
 	const router = useRouter()
 
 	const {
@@ -42,6 +63,13 @@ export default function LoginPage() {
 		handleSubmit,
 		formState: { errors },
 	} = useForm<LoginForm>({ resolver: zodResolver(loginSchema) })
+
+	async function finishSignIn(user: { getIdToken: () => Promise<string> }) {
+		const idToken = await user.getIdToken()
+		await createSession(idToken)
+		setPendingLink(null)
+		router.push('/dashboard')
+	}
 
 	const onSubmit = async (data: LoginForm) => {
 		setLoading(true)
@@ -68,13 +96,27 @@ export default function LoginPage() {
 		try {
 			const provider = new GoogleAuthProvider()
 			const credential = await signInWithPopup(auth, provider)
-			const idToken = await credential.user.getIdToken()
-			await createSession(idToken)
-			router.push('/dashboard')
+			let user = credential.user
+			if (pendingLink) {
+				await linkWithCredential(user, pendingLink.credential)
+				user = auth.currentUser!
+			}
+			await finishSignIn(user)
 		} catch (err: unknown) {
-			const msg = err instanceof Error ? err.message : ''
-			if (!msg.includes('popup-closed-by-user') && !msg.includes('cancelled-popup-request')) {
-				toast.error(msg || 'Google sign in failed. Please try again.')
+			const e = err as { code?: string; customData?: { email?: string }; credential?: AuthCredential; email?: string }
+			const email = e?.customData?.email ?? e?.email
+			if (e?.code === ACCOUNT_EXISTS_CODE && e?.credential && email) {
+				const methods = await fetchSignInMethodsForEmail(auth, email)
+				setPendingLink({
+					credential: e.credential,
+					email,
+					methods,
+					newProviderName: 'Google',
+				})
+				toast.info('This email is already registered. Sign in with your existing method below to link your Google account.')
+			} else {
+				const msg = getAuthErrorMessage(err)
+				if (msg) toast.error(msg)
 			}
 		} finally {
 			setGoogleLoading(false)
@@ -86,16 +128,46 @@ export default function LoginPage() {
 		try {
 			const provider = new GithubAuthProvider()
 			const credential = await signInWithPopup(auth, provider)
-			const idToken = await credential.user.getIdToken()
-			await createSession(idToken)
-			router.push('/dashboard')
+			let user = credential.user
+			if (pendingLink) {
+				await linkWithCredential(user, pendingLink.credential)
+				user = auth.currentUser!
+			}
+			await finishSignIn(user)
 		} catch (err: unknown) {
-			const msg = err instanceof Error ? err.message : ''
-			if (!msg.includes('popup-closed-by-user') && !msg.includes('cancelled-popup-request')) {
-				toast.error(msg || 'GitHub sign in failed. Please try again.')
+			const e = err as { code?: string; customData?: { email?: string }; credential?: AuthCredential; email?: string }
+			const email = e?.customData?.email ?? e?.email
+			if (e?.code === ACCOUNT_EXISTS_CODE && e?.credential && email) {
+				const methods = await fetchSignInMethodsForEmail(auth, email)
+				setPendingLink({
+					credential: e.credential,
+					email,
+					methods,
+					newProviderName: 'GitHub',
+				})
+				toast.info('This email is already registered. Sign in with your existing method below to link your GitHub account.')
+			} else {
+				const msg = getAuthErrorMessage(err)
+				if (msg) toast.error(msg)
 			}
 		} finally {
 			setGithubLoading(false)
+		}
+	}
+
+	const handleLinkWithPassword = async (e: React.FormEvent) => {
+		e.preventDefault()
+		if (!pendingLink || !linkPassword.trim()) return
+		setLinkPasswordLoading(true)
+		try {
+			const credential = await signInWithEmailAndPassword(auth, pendingLink.email, linkPassword)
+			await linkWithCredential(credential.user, pendingLink.credential)
+			await finishSignIn(auth.currentUser!)
+		} catch (err: unknown) {
+			const msg = getAuthErrorMessage(err) || 'Wrong password or account not found.'
+			toast.error(msg)
+		} finally {
+			setLinkPasswordLoading(false)
 		}
 	}
 
@@ -112,6 +184,82 @@ export default function LoginPage() {
 				</div>
 
 				<div className='bg-white rounded-2xl shadow-sm border border-gray-200 p-8'>
+					{/* Account linking: sign in with existing method to link the new provider */}
+					{pendingLink && (
+						<div className='mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl'>
+							<p className='text-sm text-amber-800 font-medium mb-1'>Link your account</p>
+							<p className='text-sm text-amber-700 mb-3'>
+								{pendingLink.email} is already registered. Sign in with your existing method to add {pendingLink.newProviderName}.
+							</p>
+							{pendingLink.methods.includes('password') && (
+								<form onSubmit={handleLinkWithPassword} className='space-y-2 mb-3'>
+									<input
+										type='email'
+										value={pendingLink.email}
+										readOnly
+										className='w-full border border-amber-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-700'
+									/>
+									<input
+										type='password'
+										value={linkPassword}
+										onChange={e => setLinkPassword(e.target.value)}
+										placeholder='Your password'
+										className='w-full border border-amber-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500'
+									/>
+									<div className='flex gap-2'>
+										<button
+											type='submit'
+											disabled={linkPasswordLoading}
+											className='flex-1 flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg px-3 py-2 text-sm font-medium disabled:opacity-60'
+										>
+											{linkPasswordLoading && <Loader2 className='w-4 h-4 animate-spin' />}
+											Link and sign in
+										</button>
+										<button
+											type='button'
+											onClick={() => { setPendingLink(null); setLinkPassword('') }}
+											className='px-3 py-2 text-sm text-amber-700 hover:bg-amber-100 rounded-lg'
+										>
+											Cancel
+										</button>
+									</div>
+								</form>
+							)}
+							{!pendingLink.methods.includes('password') && (
+								<p className='text-sm text-amber-700 mb-2'>Sign in with the same method you used when you first registered:</p>
+							)}
+							{pendingLink.methods.includes('google.com') && (
+								<button
+									type='button'
+									onClick={handleGoogleLogin}
+									disabled={googleLoading}
+									className='w-full mb-2 flex items-center justify-center gap-2 border border-amber-300 rounded-lg px-3 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100'
+								>
+									{googleLoading ? <Loader2 className='w-4 h-4 animate-spin' /> : 'Sign in with Google to link'}
+								</button>
+							)}
+							{pendingLink.methods.includes('github.com') && (
+								<button
+									type='button'
+									onClick={handleGitHubLogin}
+									disabled={githubLoading}
+									className='w-full flex items-center justify-center gap-2 border border-amber-300 rounded-lg px-3 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100'
+								>
+									{githubLoading ? <Loader2 className='w-4 h-4 animate-spin' /> : 'Sign in with GitHub to link'}
+								</button>
+							)}
+							{!pendingLink.methods.includes('password') && (
+								<button
+									type='button'
+									onClick={() => setPendingLink(null)}
+									className='mt-2 w-full px-3 py-2 text-sm text-amber-600 hover:bg-amber-50 rounded-lg'
+								>
+									Cancel
+								</button>
+							)}
+						</div>
+					)}
+
 					{/* Google OAuth */}
 					<button
 						onClick={handleGoogleLogin}

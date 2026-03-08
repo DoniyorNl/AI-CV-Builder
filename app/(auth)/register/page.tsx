@@ -2,10 +2,14 @@
 
 import { auth, db } from '@/lib/firebase/client'
 import { zodResolver } from '@hookform/resolvers/zod'
+import type { AuthCredential } from 'firebase/auth'
 import {
 	createUserWithEmailAndPassword,
+	fetchSignInMethodsForEmail,
 	GithubAuthProvider,
 	GoogleAuthProvider,
+	linkWithCredential,
+	signInWithEmailAndPassword,
 	signInWithPopup,
 	updateProfile,
 } from 'firebase/auth'
@@ -15,8 +19,11 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { getAuthErrorMessage } from '@/lib/utils'
 import { toast } from 'sonner'
 import { z } from 'zod'
+
+const ACCOUNT_EXISTS_CODE = 'auth/account-exists-with-different-credential'
 
 const registerSchema = z
 	.object({
@@ -32,8 +39,28 @@ const registerSchema = z
 
 type RegisterForm = z.infer<typeof registerSchema>
 
+async function createSession(idToken: string): Promise<void> {
+	const res = await fetch('/api/auth/session', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ idToken }),
+	})
+	if (!res.ok) {
+		const data = await res.json().catch(() => ({}))
+		throw new Error((data as { error?: string }).error ?? res.statusText)
+	}
+}
+
 export default function RegisterPage() {
 	const [loading, setLoading] = useState(false)
+	const [linkPassword, setLinkPassword] = useState('')
+	const [linkPasswordLoading, setLinkPasswordLoading] = useState(false)
+	const [pendingLink, setPendingLink] = useState<{
+		credential: AuthCredential
+		email: string
+		methods: string[]
+		newProviderName: string
+	} | null>(null)
 	const router = useRouter()
 
 	const {
@@ -41,6 +68,24 @@ export default function RegisterPage() {
 		handleSubmit,
 		formState: { errors },
 	} = useForm<RegisterForm>({ resolver: zodResolver(registerSchema) })
+
+	async function finishSignIn(user: { uid: string; email: string | null; displayName: string | null; getIdToken: () => Promise<string> }) {
+		await setDoc(
+			doc(db, 'users', user.uid),
+			{
+				full_name: user.displayName ?? user.email ?? '',
+				email: user.email ?? '',
+				is_pro: false,
+				stripe_customer_id: null,
+				created_at: serverTimestamp(),
+			},
+			{ merge: true },
+		)
+		const idToken = await user.getIdToken()
+		await createSession(idToken)
+		setPendingLink(null)
+		router.push('/dashboard')
+	}
 
 	const onSubmit = async (data: RegisterForm) => {
 		setLoading(true)
@@ -86,36 +131,27 @@ export default function RegisterPage() {
 		try {
 			const provider = new GoogleAuthProvider()
 			const credential = await signInWithPopup(auth, provider)
-
-			// Upsert profile (idempotent for returning Google users)
-			await setDoc(
-				doc(db, 'users', credential.user.uid),
-				{
-					full_name: credential.user.displayName ?? '',
-					email: credential.user.email ?? '',
-					is_pro: false,
-					stripe_customer_id: null,
-					created_at: serverTimestamp(),
-				},
-				{ merge: true },
-			)
-
-			const idToken = await credential.user.getIdToken()
-			const res = await fetch('/api/auth/session', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ idToken }),
-			})
-			if (!res.ok) {
-				const data = await res.json().catch(() => ({}))
-				throw new Error((data as { error?: string }).error ?? res.statusText)
+			let user = credential.user
+			if (pendingLink) {
+				await linkWithCredential(user, pendingLink.credential)
+				user = auth.currentUser!
 			}
-
-			router.push('/dashboard')
+			await finishSignIn(user)
 		} catch (err: unknown) {
-			const msg = err instanceof Error ? err.message : ''
-			if (!msg.includes('popup-closed-by-user') && !msg.includes('cancelled-popup-request')) {
-				toast.error(msg || 'Google sign up failed. Please try again.')
+			const e = err as { code?: string; customData?: { email?: string }; credential?: AuthCredential; email?: string }
+			const email = e?.customData?.email ?? e?.email
+			if (e?.code === ACCOUNT_EXISTS_CODE && e?.credential && email) {
+				const methods = await fetchSignInMethodsForEmail(auth, email)
+				setPendingLink({
+					credential: e.credential,
+					email,
+					methods,
+					newProviderName: 'Google',
+				})
+				toast.info('This email is already registered. Sign in with your existing method below to link your Google account.')
+			} else {
+				const msg = getAuthErrorMessage(err)
+				if (msg) toast.error(msg)
 			}
 		} finally {
 			setLoading(false)
@@ -127,39 +163,45 @@ export default function RegisterPage() {
 		try {
 			const provider = new GithubAuthProvider()
 			const credential = await signInWithPopup(auth, provider)
-
-			// Upsert profile (idempotent for returning GitHub users)
-			await setDoc(
-				doc(db, 'users', credential.user.uid),
-				{
-					full_name: credential.user.displayName ?? credential.user.email ?? '',
-					email: credential.user.email ?? '',
-					is_pro: false,
-					stripe_customer_id: null,
-					created_at: serverTimestamp(),
-				},
-				{ merge: true },
-			)
-
-			const idToken = await credential.user.getIdToken()
-			const res = await fetch('/api/auth/session', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ idToken }),
-			})
-			if (!res.ok) {
-				const data = await res.json().catch(() => ({}))
-				throw new Error((data as { error?: string }).error ?? res.statusText)
+			let user = credential.user
+			if (pendingLink) {
+				await linkWithCredential(user, pendingLink.credential)
+				user = auth.currentUser!
 			}
-
-			router.push('/dashboard')
+			await finishSignIn(user)
 		} catch (err: unknown) {
-			const msg = err instanceof Error ? err.message : ''
-			if (!msg.includes('popup-closed-by-user') && !msg.includes('cancelled-popup-request')) {
-				toast.error(msg || 'GitHub sign up failed. Please try again.')
+			const e = err as { code?: string; customData?: { email?: string }; credential?: AuthCredential; email?: string }
+			const email = e?.customData?.email ?? e?.email
+			if (e?.code === ACCOUNT_EXISTS_CODE && e?.credential && email) {
+				const methods = await fetchSignInMethodsForEmail(auth, email)
+				setPendingLink({
+					credential: e.credential,
+					email,
+					methods,
+					newProviderName: 'GitHub',
+				})
+				toast.info('This email is already registered. Sign in with your existing method below to link your GitHub account.')
+			} else {
+				const msg = getAuthErrorMessage(err)
+				if (msg) toast.error(msg)
 			}
 		} finally {
 			setLoading(false)
+		}
+	}
+
+	const handleLinkWithPassword = async (e: React.FormEvent) => {
+		e.preventDefault()
+		if (!pendingLink || !linkPassword.trim()) return
+		setLinkPasswordLoading(true)
+		try {
+			const credential = await signInWithEmailAndPassword(auth, pendingLink.email, linkPassword)
+			await linkWithCredential(credential.user, pendingLink.credential)
+			await finishSignIn(auth.currentUser!)
+		} catch (err: unknown) {
+			toast.error(getAuthErrorMessage(err) || 'Wrong password or account not found.')
+		} finally {
+			setLinkPasswordLoading(false)
 		}
 	}
 
@@ -175,6 +217,81 @@ export default function RegisterPage() {
 				</div>
 
 				<div className='bg-white rounded-2xl shadow-sm border border-gray-200 p-8'>
+					{pendingLink && (
+						<div className='mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl'>
+							<p className='text-sm text-amber-800 font-medium mb-1'>Link your account</p>
+							<p className='text-sm text-amber-700 mb-3'>
+								{pendingLink.email} is already registered. Sign in with your existing method to add {pendingLink.newProviderName}.
+							</p>
+							{pendingLink.methods.includes('password') && (
+								<form onSubmit={handleLinkWithPassword} className='space-y-2 mb-3'>
+									<input
+										type='email'
+										value={pendingLink.email}
+										readOnly
+										className='w-full border border-amber-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-700'
+									/>
+									<input
+										type='password'
+										value={linkPassword}
+										onChange={e => setLinkPassword(e.target.value)}
+										placeholder='Your password'
+										className='w-full border border-amber-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500'
+									/>
+									<div className='flex gap-2'>
+										<button
+											type='submit'
+											disabled={linkPasswordLoading}
+											className='flex-1 flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg px-3 py-2 text-sm font-medium disabled:opacity-60'
+										>
+											{linkPasswordLoading && <Loader2 className='w-4 h-4 animate-spin' />}
+											Link and sign in
+										</button>
+										<button
+											type='button'
+											onClick={() => { setPendingLink(null); setLinkPassword('') }}
+											className='px-3 py-2 text-sm text-amber-700 hover:bg-amber-100 rounded-lg'
+										>
+											Cancel
+										</button>
+									</div>
+								</form>
+							)}
+							{!pendingLink.methods.includes('password') && (
+								<p className='text-sm text-amber-700 mb-2'>Sign in with the same method you used when you first registered:</p>
+							)}
+							{pendingLink.methods.includes('google.com') && (
+								<button
+									type='button'
+									onClick={handleGoogleSignup}
+									disabled={loading}
+									className='w-full mb-2 flex items-center justify-center gap-2 border border-amber-300 rounded-lg px-3 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100'
+								>
+									{loading ? <Loader2 className='w-4 h-4 animate-spin' /> : 'Sign in with Google to link'}
+								</button>
+							)}
+							{pendingLink.methods.includes('github.com') && (
+								<button
+									type='button'
+									onClick={handleGitHubSignup}
+									disabled={loading}
+									className='w-full flex items-center justify-center gap-2 border border-amber-300 rounded-lg px-3 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100'
+								>
+									{loading ? <Loader2 className='w-4 h-4 animate-spin' /> : 'Sign in with GitHub to link'}
+								</button>
+							)}
+							{!pendingLink.methods.includes('password') && (
+								<button
+									type='button'
+									onClick={() => setPendingLink(null)}
+									className='mt-2 w-full px-3 py-2 text-sm text-amber-600 hover:bg-amber-50 rounded-lg'
+								>
+									Cancel
+								</button>
+							)}
+						</div>
+					)}
+
 					{/* Google sign up */}
 					<button
 						onClick={handleGoogleSignup}
