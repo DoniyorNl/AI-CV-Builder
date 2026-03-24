@@ -61,13 +61,13 @@ export function PreviewClient({ cv, sections }: Props) {
 		<div className='flex gap-6 min-h-[calc(100vh-8rem)]'>
 			{/* Left panel — controls */}
 			<aside className='w-64 shrink-0'>
-				<div className='bg-white rounded-2xl border border-gray-200 p-5 sticky top-24 space-y-6'>
+				<div className='bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-5 sticky top-24 space-y-6'>
 					<div>
-						<h3 className='font-semibold text-gray-900 mb-3'>Template</h3>
+						<h3 className='font-semibold text-gray-900 dark:text-white mb-3'>Template</h3>
 						<TemplateSelector selected={template} onSelect={handleTemplateChange} />
 					</div>
 
-					<div className='space-y-2 pt-4 border-t border-gray-100'>
+					<div className='space-y-2 pt-4 border-t border-gray-100 dark:border-slate-700'>
 						{/* Download PDF */}
 						{sub?.isPro ? (
 							<button
@@ -94,7 +94,7 @@ export function PreviewClient({ cv, sections }: Props) {
 
 						<Link
 							href={`/builder/${cv.id}/edit`}
-							className='w-full flex items-center justify-center gap-2 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-xl py-2.5 text-sm font-medium transition'
+							className='w-full flex items-center justify-center gap-2 border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-xl py-2.5 text-sm font-medium transition'
 						>
 							<Edit2 className='w-4 h-4' />
 							Edit CV

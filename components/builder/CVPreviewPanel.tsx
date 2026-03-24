@@ -12,7 +12,7 @@ interface Props {
 
 export function CVPreviewPanel({ data, template }: Props) {
 	return (
-		<div className='bg-gray-200 rounded-2xl p-6 min-h-full'>
+		<div className='bg-gray-200 dark:bg-slate-700 rounded-2xl p-6 min-h-full'>
 			<div className='max-w-2xl mx-auto bg-white shadow-xl rounded-lg overflow-hidden'>
 				{template === 'modern' && <ModernPreview data={data} />}
 				{template === 'minimal' && <MinimalPreview data={data} />}

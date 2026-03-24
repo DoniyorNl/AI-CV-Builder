@@ -9,7 +9,6 @@ function getAdminApp() {
 		credential: cert({
 			projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
 			clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
-			// Vercel stores multi-line secrets as escaped \n — normalize here
 			privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, '\n'),
 		}),
 	})

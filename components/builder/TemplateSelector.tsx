@@ -45,8 +45,8 @@ export function TemplateSelector({ selected, onSelect }: Props) {
 					className={cn(
 						'relative border-2 rounded-xl p-3 text-left transition',
 						selected === t.id
-							? 'border-indigo-500 bg-indigo-50'
-							: 'border-gray-200 hover:border-gray-300 bg-white',
+							? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/50'
+							: 'border-gray-200 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800',
 					)}
 				>
 					{/* Mini preview */}
@@ -59,8 +59,8 @@ export function TemplateSelector({ selected, onSelect }: Props) {
 						</div>
 					</div>
 
-					<p className='font-medium text-sm text-gray-900'>{t.name}</p>
-					<p className='text-xs text-gray-400 mt-0.5'>{t.description}</p>
+					<p className='font-medium text-sm text-gray-900 dark:text-white'>{t.name}</p>
+					<p className='text-xs text-gray-400 dark:text-slate-500 mt-0.5'>{t.description}</p>
 
 					{selected === t.id && (
 						<div className='absolute top-2 right-2 w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center'>

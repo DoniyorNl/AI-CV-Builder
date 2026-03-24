@@ -1,5 +1,6 @@
 'use client'
 
+import { VoiceMicButton } from '@/components/ui/VoiceMicButton'
 import type { CVData, SummaryContent } from '@/types/cv.types'
 import { Loader2, Sparkles } from 'lucide-react'
 import { useState } from 'react'
@@ -40,7 +41,7 @@ export function SummarySection({ data, context, onChange }: Props) {
 	return (
 		<div className='space-y-3'>
 			<div className='flex items-center justify-between'>
-				<p className='text-sm text-gray-500'>
+				<p className='text-sm text-gray-500 dark:text-slate-400'>
 					Write a rough description — AI will polish it into a professional summary.
 				</p>
 				<button
@@ -57,15 +58,22 @@ export function SummarySection({ data, context, onChange }: Props) {
 				</button>
 			</div>
 
-			<textarea
-				value={data.text}
-				onChange={e => onChange({ text: e.target.value })}
-				rows={8}
-				className='w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none'
-				placeholder='e.g. 5 years of React experience, built SaaS products, led a team of 3 developers...'
-			/>
+			<div className='relative'>
+				<textarea
+					value={data.text}
+					onChange={e => onChange({ text: e.target.value })}
+					rows={8}
+					className='w-full border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2.5 pr-9 text-sm dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none'
+					placeholder='e.g. 5 years of React experience, built SaaS products, led a team of 3 developers...'
+				/>
+				<VoiceMicButton
+					value={data.text}
+					onChange={v => onChange({ text: v })}
+					className='absolute right-1.5 top-2'
+				/>
+			</div>
 
-			<p className='text-xs text-gray-400'>{data.text.length} characters</p>
+			<p className='text-xs text-gray-400 dark:text-slate-500'>{data.text.length} characters</p>
 		</div>
 	)
 }

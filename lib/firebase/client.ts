@@ -21,8 +21,6 @@ function getFirebaseConfig() {
 	}
 }
 
-// Lazy singletons — only created when first accessed (prevents server-side
-// initialization during Next.js prerendering when env vars are absent).
 let _app: FirebaseApp | undefined
 let _auth: Auth | undefined
 let _db: Firestore | undefined
@@ -43,8 +41,5 @@ export function getClientDB(): Firestore {
 	return _db
 }
 
-// Eagerly initialise in the browser; during SSR / build the exports are null
-// (which is fine — client hooks only use them inside event handlers or
-// React-Query functions that run exclusively in the browser).
 export const auth: Auth = (typeof window !== 'undefined' ? getClientAuth() : null) as Auth
 export const db: Firestore = (typeof window !== 'undefined' ? getClientDB() : null) as Firestore

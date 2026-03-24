@@ -11,12 +11,14 @@ import type { ReactElement } from 'react'
 export async function generatePDFBuffer(
 	cvData: CVData,
 	template: 'modern' | 'minimal' | 'classic',
+	watermark = false,
 ): Promise<Buffer> {
 	// Dynamic import keeps React-PDF out of the browser bundle.
 	const { renderToBuffer } = await import('@react-pdf/renderer')
 	const React = (await import('react')).default
 
-	let TemplateComponent: React.ComponentType<{ data: CVData }>
+	type TemplateProps = { data: CVData; watermark?: boolean }
+	let TemplateComponent: React.ComponentType<TemplateProps>
 
 	if (template === 'modern') {
 		const mod = await import('@/components/templates/ModernTemplate')
@@ -29,7 +31,7 @@ export async function generatePDFBuffer(
 		TemplateComponent = mod.ClassicTemplate
 	}
 
-	const element = React.createElement(TemplateComponent, { data: cvData })
+	const element = React.createElement(TemplateComponent, { data: cvData, watermark })
 	// React-PDF's renderToBuffer expects ReactElement<DocumentProps>. Each
 	// template wraps content in <Document>, but createElement infers the
 	// component's own prop type. We assert via the shared interface.

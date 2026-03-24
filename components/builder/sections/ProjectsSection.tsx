@@ -2,6 +2,7 @@
 
 import { generateId } from '@/lib/utils'
 import type { ProjectItem } from '@/types/cv.types'
+import { VoiceMicButton } from '@/components/ui/VoiceMicButton'
 import { Plus, Trash2, X } from 'lucide-react'
 import { useState } from 'react'
 
@@ -40,11 +41,14 @@ export function ProjectsSection({ data, onChange }: Props) {
 	return (
 		<div className='space-y-4'>
 			{data.map((item, i) => (
-				<div key={item.id} className='border border-gray-200 rounded-xl p-4 space-y-3'>
+				<div
+					key={item.id}
+					className='border border-gray-200 dark:border-slate-700 rounded-xl p-4 space-y-3'
+				>
 					<div className='flex justify-end'>
 						<button
 							onClick={() => onChange(data.filter((_, j) => j !== i))}
-							className='p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition'
+							className='p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition'
 						>
 							<Trash2 className='w-3.5 h-3.5' />
 						</button>
@@ -52,45 +56,65 @@ export function ProjectsSection({ data, onChange }: Props) {
 
 					<div className='grid grid-cols-2 gap-3'>
 						<div>
-							<label className='block text-xs font-medium text-gray-600 mb-1'>Project Name</label>
-							<input
-								value={item.name}
-								onChange={e => update(i, 'name', e.target.value)}
-								className='w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500'
-								placeholder='My Awesome Project'
-							/>
+							<label className='block text-xs font-medium text-gray-600 dark:text-slate-400 mb-1'>
+								Project Name
+							</label>
+							<div className='relative'>
+								<input
+									value={item.name}
+									onChange={e => update(i, 'name', e.target.value)}
+									className='w-full border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 pr-9 text-sm dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500'
+									placeholder='My Awesome Project'
+								/>
+								<VoiceMicButton
+									value={item.name}
+									onChange={v => update(i, 'name', v)}
+									className='absolute right-1.5 top-1/2 -translate-y-1/2'
+								/>
+							</div>
 						</div>
 						<div>
-							<label className='block text-xs font-medium text-gray-600 mb-1'>
+							<label className='block text-xs font-medium text-gray-600 dark:text-slate-400 mb-1'>
 								Link (optional)
 							</label>
 							<input
 								value={item.link ?? ''}
 								onChange={e => update(i, 'link', e.target.value)}
-								className='w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500'
+								className='w-full border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500'
 								placeholder='github.com/user/project'
 							/>
 						</div>
 					</div>
 
 					<div>
-						<label className='block text-xs font-medium text-gray-600 mb-1'>Description</label>
-						<textarea
-							value={item.description}
-							onChange={e => update(i, 'description', e.target.value)}
-							rows={2}
-							className='w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none'
-							placeholder='What does this project do?'
-						/>
+						<label className='block text-xs font-medium text-gray-600 dark:text-slate-400 mb-1'>
+							Description
+						</label>
+						<div className='relative'>
+							<textarea
+								value={item.description}
+								onChange={e => update(i, 'description', e.target.value)}
+								rows={2}
+								className='w-full border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 pr-9 text-sm dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none'
+								placeholder='What does this project do?'
+							/>
+							<VoiceMicButton
+								value={item.description}
+								onChange={v => update(i, 'description', v)}
+								className='absolute right-1.5 top-2'
+							/>
+						</div>
 					</div>
 
 					<div>
-						<label className='block text-xs font-medium text-gray-600 mb-2'>Technologies</label>
+						<label className='block text-xs font-medium text-gray-600 dark:text-slate-400 mb-2'>
+							Technologies
+						</label>
 						<div className='flex flex-wrap gap-1.5 mb-2'>
 							{item.technologies.map((t, ti) => (
 								<span
 									key={ti}
-									className='flex items-center gap-1 bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full'
+									className='flex items-center gap-1 bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 text-xs px-2 py-0.5 rounded-full'
 								>
 									{t}
 									<button onClick={() => removeTech(i, ti)}>
@@ -104,7 +128,7 @@ export function ProjectsSection({ data, onChange }: Props) {
 								value={techInputs[item.id] ?? ''}
 								onChange={e => setTechInputs(prev => ({ ...prev, [item.id]: e.target.value }))}
 								onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addTech(item.id, i))}
-								className='flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500'
+								className='flex-1 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-1.5 text-sm dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500'
 								placeholder='React, Node.js…'
 							/>
 							<button
@@ -125,7 +149,7 @@ export function ProjectsSection({ data, onChange }: Props) {
 						{ id: generateId(), name: '', link: '', description: '', technologies: [] },
 					])
 				}
-				className='w-full border-2 border-dashed border-gray-200 rounded-xl py-3 text-sm text-gray-400 hover:border-indigo-300 hover:text-indigo-500 transition flex items-center justify-center gap-2'
+				className='w-full border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-xl py-3 text-sm text-gray-400 dark:text-slate-500 hover:border-indigo-300 hover:text-indigo-500 transition flex items-center justify-center gap-2'
 			>
 				<Plus className='w-4 h-4' />
 				Add Project

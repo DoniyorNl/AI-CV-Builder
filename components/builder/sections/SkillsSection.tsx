@@ -50,7 +50,7 @@ function TagInput({
 					value={input}
 					onChange={e => setInput(e.target.value)}
 					onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), add())}
-					className='flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500'
+					className='flex-1 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500'
 					placeholder={placeholder}
 				/>
 				<button
@@ -68,8 +68,12 @@ export function SkillsSection({ data, onChange }: Props) {
 	return (
 		<div className='space-y-6'>
 			<div>
-				<label className='block text-sm font-medium text-gray-700 mb-2'>Technical Skills</label>
-				<p className='text-xs text-gray-400 mb-3'>Press Enter or click + to add</p>
+				<label className='block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2'>
+					Technical Skills
+				</label>
+				<p className='text-xs text-gray-400 dark:text-slate-500 mb-3'>
+					Press Enter or click + to add
+				</p>
 				<TagInput
 					tags={data.technical}
 					placeholder='e.g. React, TypeScript, PostgreSQL'
@@ -79,7 +83,9 @@ export function SkillsSection({ data, onChange }: Props) {
 			</div>
 
 			<div>
-				<label className='block text-sm font-medium text-gray-700 mb-2'>Soft Skills</label>
+				<label className='block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2'>
+					Soft Skills
+				</label>
 				<TagInput
 					tags={data.soft}
 					placeholder='e.g. Leadership, Communication'

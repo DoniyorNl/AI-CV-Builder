@@ -1,15 +1,20 @@
 import { adminDB } from '@/lib/firebase/admin'
+import { getServerUser } from '@/lib/firebase/session'
 import type { CV, CVSection } from '@/types/cv.types'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { PreviewClient } from './PreviewClient'
 
 export default async function PreviewPage({ params }: { params: Promise<{ id: string }> }) {
 	const { id } = await params
 
-	const cvSnap = await adminDB().collection('cvs').doc(id).get()
-	if (!cvSnap.exists) notFound()
+	const user = await getServerUser()
+	if (!user) redirect('/login')
 
-	const cvData = cvSnap.data()!
+	const cvSnap = await adminDB().collection('cvs').doc(id).get()
+	const rawData = cvSnap.data()
+	if (!cvSnap.exists || rawData?.user_id !== user.uid) notFound()
+
+	const cvData = rawData!
 	const cv: CV = {
 		...(cvData as CV),
 		id: cvSnap.id,

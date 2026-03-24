@@ -18,13 +18,6 @@ export async function GET(req: NextRequest) {
 	const profileSnap = await adminDB().collection('users').doc(user.uid).get()
 	const isPro = (profileSnap.data()?.is_pro as boolean | undefined) ?? false
 
-	if (!isPro) {
-		return NextResponse.json(
-			{ error: 'PDF download requires Pro plan', upgrade: '/billing' },
-			{ status: 402 },
-		)
-	}
-
 	// ── Validate query params ─────────────────────────────────
 	const { searchParams } = new URL(req.url)
 	const cvId = searchParams.get('id')
@@ -46,18 +39,16 @@ export async function GET(req: NextRequest) {
 	}
 
 	// ── Fetch sections ────────────────────────────────────────
-	const sectionsSnap = await adminDB()
-		.collection('cv_sections')
-		.where('cv_id', '==', cvId)
-		.orderBy('order_index', 'asc')
-		.get()
+	const sectionsSnap = await adminDB().collection('cv_sections').where('cv_id', '==', cvId).get()
 
-	const sections = sectionsSnap.docs.map(d => d.data() as CVSection)
+	const sections = sectionsSnap.docs
+		.map(d => d.data() as CVSection)
+		.sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))
 	const cvData: CVData = sectionsToCVData(sections)
 
 	// ── Generate PDF ──────────────────────────────────────────
 	try {
-		const buffer = await generatePDFBuffer(cvData, template)
+		const buffer = await generatePDFBuffer(cvData, template, !isPro)
 		const safeTitle =
 			(cvSnap.data()?.title as string | undefined)?.replace(/[^a-z0-9-_ ]/gi, '') ?? 'cv'
 

@@ -1,5 +1,6 @@
 'use client'
 
+import { VoiceMicButton } from '@/components/ui/VoiceMicButton'
 import { generateId } from '@/lib/utils'
 import type { ExperienceItem } from '@/types/cv.types'
 import { ChevronDown, ChevronUp, Loader2, Plus, Sparkles, Trash2 } from 'lucide-react'
@@ -49,11 +50,11 @@ function ExperienceCard({
 	}
 
 	return (
-		<div className='border border-gray-200 rounded-xl overflow-hidden'>
+		<div className='border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden'>
 			{/* Header */}
-			<div className='flex items-center justify-between px-4 py-3 bg-gray-50'>
+			<div className='flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-slate-800/60'>
 				<button
-					className='flex items-center gap-2 text-sm font-medium text-gray-700'
+					className='flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-slate-200'
 					onClick={() => setOpen(!open)}
 				>
 					{open ? <ChevronUp className='w-4 h-4' /> : <ChevronDown className='w-4 h-4' />}
@@ -61,7 +62,7 @@ function ExperienceCard({
 				</button>
 				<button
 					onClick={onDelete}
-					className='p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition'
+					className='p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition'
 				>
 					<Trash2 className='w-3.5 h-3.5' />
 				</button>
@@ -71,40 +72,62 @@ function ExperienceCard({
 				<div className='p-4 space-y-4'>
 					<div className='grid grid-cols-2 gap-3'>
 						<div>
-							<label className='block text-xs font-medium text-gray-600 mb-1'>Company</label>
-							<input
-								value={item.company}
-								onChange={e => set('company', e.target.value)}
-								className='w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500'
-								placeholder='Google'
-							/>
+							<label className='block text-xs font-medium text-gray-600 dark:text-slate-400 mb-1'>
+								Company
+							</label>
+							<div className='relative'>
+								<input
+									value={item.company}
+									onChange={e => set('company', e.target.value)}
+									className='w-full border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 pr-9 text-sm dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500'
+									placeholder='Google'
+								/>
+								<VoiceMicButton
+									value={item.company}
+									onChange={v => set('company', v)}
+									className='absolute right-1.5 top-1/2 -translate-y-1/2'
+								/>
+							</div>
 						</div>
 						<div>
-							<label className='block text-xs font-medium text-gray-600 mb-1'>Position</label>
-							<input
-								value={item.position}
-								onChange={e => set('position', e.target.value)}
-								className='w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500'
-								placeholder='Senior Engineer'
-							/>
+							<label className='block text-xs font-medium text-gray-600 dark:text-slate-400 mb-1'>
+								Position
+							</label>
+							<div className='relative'>
+								<input
+									value={item.position}
+									onChange={e => set('position', e.target.value)}
+									className='w-full border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 pr-9 text-sm dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500'
+									placeholder='Senior Engineer'
+								/>
+								<VoiceMicButton
+									value={item.position}
+									onChange={v => set('position', v)}
+									className='absolute right-1.5 top-1/2 -translate-y-1/2'
+								/>
+							</div>
 						</div>
 						<div>
-							<label className='block text-xs font-medium text-gray-600 mb-1'>Start Date</label>
+							<label className='block text-xs font-medium text-gray-600 dark:text-slate-400 mb-1'>
+								Start Date
+							</label>
 							<input
 								type='month'
 								value={item.start_date}
 								onChange={e => set('start_date', e.target.value)}
-								className='w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500'
+								className='w-full border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500'
 							/>
 						</div>
 						<div>
-							<label className='block text-xs font-medium text-gray-600 mb-1'>End Date</label>
+							<label className='block text-xs font-medium text-gray-600 dark:text-slate-400 mb-1'>
+								End Date
+							</label>
 							<input
 								type='month'
 								value={item.end_date}
 								onChange={e => set('end_date', e.target.value)}
 								disabled={item.current}
-								className='w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-400'
+								className='w-full border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50 dark:disabled:bg-slate-700/50 disabled:text-gray-400 dark:disabled:text-slate-500'
 							/>
 						</div>
 					</div>
@@ -117,7 +140,10 @@ function ExperienceCard({
 							onChange={e => set('current', e.target.checked)}
 							className='rounded'
 						/>
-						<label htmlFor={`current-${item.id}`} className='text-sm text-gray-600'>
+						<label
+							htmlFor={`current-${item.id}`}
+							className='text-sm text-gray-600 dark:text-slate-400'
+						>
 							I currently work here
 						</label>
 					</div>
@@ -125,7 +151,7 @@ function ExperienceCard({
 					{/* Raw description + AI */}
 					<div>
 						<div className='flex items-center justify-between mb-1'>
-							<label className='block text-xs font-medium text-gray-600'>
+							<label className='block text-xs font-medium text-gray-600 dark:text-slate-400'>
 								Job Description (raw — AI will convert to bullets)
 							</label>
 							<button
@@ -141,19 +167,26 @@ function ExperienceCard({
 								AI Bullets
 							</button>
 						</div>
-						<textarea
-							value={item.raw_description ?? ''}
-							onChange={e => set('raw_description', e.target.value)}
-							rows={3}
-							className='w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none'
-							placeholder='Describe what you did in this role...'
-						/>
+						<div className='relative'>
+							<textarea
+								value={item.raw_description ?? ''}
+								onChange={e => set('raw_description', e.target.value)}
+								rows={3}
+								className='w-full border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 pr-9 text-sm dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none'
+								placeholder='Describe what you did in this role...'
+							/>
+							<VoiceMicButton
+								value={item.raw_description ?? ''}
+								onChange={v => set('raw_description', v)}
+								className='absolute right-1.5 top-2'
+							/>
+						</div>
 					</div>
 
 					{/* Generated bullets */}
 					{item.bullets.length > 0 && (
 						<div>
-							<label className='block text-xs font-medium text-gray-600 mb-2'>
+							<label className='block text-xs font-medium text-gray-600 dark:text-slate-400 mb-2'>
 								Generated Bullets
 							</label>
 							<ul className='space-y-1.5'>
@@ -167,7 +200,7 @@ function ExperienceCard({
 												updated[i] = e.target.value
 												set('bullets', updated)
 											}}
-											className='flex-1 border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500'
+											className='flex-1 border border-gray-200 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-sm dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500'
 										/>
 										<button
 											onClick={() =>
@@ -225,7 +258,7 @@ export function ExperienceSection({ data, onChange }: Props) {
 
 			<button
 				onClick={addItem}
-				className='w-full border-2 border-dashed border-gray-200 rounded-xl py-3 text-sm text-gray-400 hover:border-indigo-300 hover:text-indigo-500 transition flex items-center justify-center gap-2'
+				className='w-full border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-xl py-3 text-sm text-gray-400 dark:text-slate-500 hover:border-indigo-300 hover:text-indigo-500 transition flex items-center justify-center gap-2'
 			>
 				<Plus className='w-4 h-4' />
 				Add Experience

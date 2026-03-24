@@ -1,19 +1,7 @@
 'use client'
 
+import { VoiceMicButton } from '@/components/ui/VoiceMicButton'
 import type { PersonalInfo } from '@/types/cv.types'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
-
-const schema = z.object({
-	full_name: z.string().min(1),
-	email: z.string().email(),
-	phone: z.string(),
-	city: z.string(),
-	linkedin: z.string().optional(),
-	website: z.string().optional(),
-})
 
 interface Props {
 	data: PersonalInfo
@@ -35,32 +23,29 @@ const fields: Array<{
 ]
 
 export function PersonalSection({ data, onChange }: Props) {
-	const {
-		register,
-		watch,
-		formState: { errors },
-	} = useForm<PersonalInfo>({
-		resolver: zodResolver(schema),
-		defaultValues: data,
-	})
-
-	useEffect(() => {
-		const sub = watch(values => onChange(values as PersonalInfo))
-		return () => sub.unsubscribe()
-	}, [watch, onChange])
+	const update = (name: keyof PersonalInfo, value: string) => onChange({ ...data, [name]: value })
 
 	return (
 		<div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
 			{fields.map(({ name, label, placeholder, type }) => (
 				<div key={name} className={name === 'full_name' ? 'sm:col-span-2' : ''}>
-					<label className='block text-sm font-medium text-gray-700 mb-1'>{label}</label>
-					<input
-						type={type ?? 'text'}
-						{...register(name)}
-						placeholder={placeholder}
-						className='w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
-					/>
-					{errors[name] && <p className='text-red-500 text-xs mt-1'>{errors[name]?.message}</p>}
+					<label className='block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1'>
+						{label}
+					</label>
+					<div className='relative'>
+						<input
+							type={type ?? 'text'}
+							value={data[name] ?? ''}
+							onChange={e => update(name, e.target.value)}
+							placeholder={placeholder}
+							className='w-full border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2.5 pr-9 text-sm dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
+						/>
+						<VoiceMicButton
+							value={data[name] ?? ''}
+							onChange={v => update(name, v)}
+							className='absolute right-1.5 top-1/2 -translate-y-1/2'
+						/>
+					</div>
 				</div>
 			))}
 		</div>

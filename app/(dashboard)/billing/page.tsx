@@ -34,24 +34,29 @@ export default function BillingPage() {
 	return (
 		<div className='max-w-3xl mx-auto'>
 			<div className='text-center mb-10'>
-				<h1 className='text-3xl font-bold text-gray-900'>Choose your plan</h1>
-				<p className='text-gray-500 mt-2'>Unlock PDF downloads and more with Pro</p>
+				<h1 className='text-3xl font-bold text-gray-900 dark:text-white'>Choose your plan</h1>
+				<p className='text-gray-500 dark:text-slate-400 mt-2'>
+					Unlock PDF downloads and more with Pro
+				</p>
 			</div>
 
 			<div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
 				{/* Free Plan */}
-				<div className='bg-white rounded-2xl border border-gray-200 p-7'>
+				<div className='bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-7'>
 					<div className='mb-5'>
-						<h2 className='text-xl font-bold text-gray-900'>{PLANS.free.name}</h2>
+						<h2 className='text-xl font-bold text-gray-900 dark:text-white'>{PLANS.free.name}</h2>
 						<div className='mt-2'>
-							<span className='text-4xl font-bold text-gray-900'>$0</span>
-							<span className='text-gray-400 ml-1'>/month</span>
+							<span className='text-4xl font-bold text-gray-900 dark:text-white'>$0</span>
+							<span className='text-gray-400 dark:text-slate-500 ml-1'>/month</span>
 						</div>
 					</div>
 
 					<ul className='space-y-3 mb-7'>
 						{PLANS.free.features.map(f => (
-							<li key={f} className='flex items-center gap-2.5 text-sm text-gray-600'>
+							<li
+								key={f}
+								className='flex items-center gap-2.5 text-sm text-gray-600 dark:text-slate-300'
+							>
 								<Check className='w-4 h-4 text-green-500 shrink-0' />
 								{f}
 							</li>
@@ -62,7 +67,7 @@ export default function BillingPage() {
 						</li>
 					</ul>
 
-					<div className='border border-gray-200 rounded-xl py-2.5 text-center text-sm text-gray-500'>
+					<div className='border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 text-center text-sm text-gray-500 dark:text-slate-400'>
 						{sub?.isPro ? 'Previous plan' : 'Current plan'}
 					</div>
 				</div>
@@ -115,7 +120,7 @@ export default function BillingPage() {
 				</div>
 			</div>
 
-			<p className='text-center text-xs text-gray-400 mt-6'>
+			<p className='text-center text-xs text-gray-400 dark:text-slate-500 mt-6'>
 				Secure payment via Stripe · Cancel anytime · No hidden fees
 			</p>
 		</div>

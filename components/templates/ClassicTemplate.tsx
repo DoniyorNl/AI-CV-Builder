@@ -1,6 +1,23 @@
 import type { CVData } from '@/types/cv.types'
 import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 
+const watermarkStyle = StyleSheet.create({
+	overlay: {
+		position: 'absolute',
+		top: 310,
+		left: 60,
+		right: 60,
+		alignItems: 'center',
+		transform: 'rotate(-45deg)',
+	},
+	text: {
+		fontSize: 58,
+		fontFamily: 'Helvetica-Bold',
+		color: '#e5e7eb',
+		letterSpacing: 8,
+	},
+})
+
 const s = StyleSheet.create({
 	page: { padding: '36 48', fontFamily: 'Helvetica', fontSize: 9.5 },
 	header: {
@@ -45,7 +62,7 @@ const s = StyleSheet.create({
 	skillLabel: { fontFamily: 'Helvetica-Bold', fontSize: 8.5 },
 })
 
-export function ClassicTemplate({ data }: { data: CVData }) {
+export function ClassicTemplate({ data, watermark }: { data: CVData; watermark?: boolean }) {
 	const { personal, summary, experience, education, skills, projects } = data
 	return (
 		<Document>
@@ -144,6 +161,12 @@ export function ClassicTemplate({ data }: { data: CVData }) {
 								)}
 							</View>
 						))}
+					</View>
+				)}
+				{/* Watermark overlay — visible on Free plan exports */}
+				{watermark && (
+					<View fixed style={watermarkStyle.overlay}>
+						<Text style={watermarkStyle.text}>FREE PLAN</Text>
 					</View>
 				)}
 			</Page>

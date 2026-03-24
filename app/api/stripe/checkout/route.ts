@@ -31,8 +31,12 @@ export async function POST(req: NextRequest) {
 	}
 
 	// ── Create Stripe Checkout Session ─────────────────────────
-	const origin =
-		req.headers.get('origin') ?? process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+	// Validate origin against known app URL to prevent open-redirect via a
+	// forged Origin header — fall back to the configured app URL.
+	const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+	const allowedOrigins = [appUrl, 'http://localhost:3000'].filter(Boolean)
+	const requestOrigin = req.headers.get('origin') ?? ''
+	const origin = allowedOrigins.includes(requestOrigin) ? requestOrigin : appUrl
 
 	const session = await getStripe().checkout.sessions.create({
 		customer: customerId,
