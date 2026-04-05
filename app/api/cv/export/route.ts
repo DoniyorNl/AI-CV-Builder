@@ -1,4 +1,4 @@
-import { sectionsToCVData } from '@/hooks/useCV'
+import { sectionsToCVData } from '@/lib/cv-utils'
 import { adminDB } from '@/lib/firebase/admin'
 import { getServerUser } from '@/lib/firebase/session'
 import { generatePDFBuffer } from '@/lib/pdf'

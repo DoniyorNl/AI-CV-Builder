@@ -32,16 +32,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
 							<span className='font-bold text-gray-900 dark:text-white'>AI CV Builder</span>
 						</Link>
 						<nav className='hidden sm:flex items-center gap-1'>
-							<Link
-								href='/dashboard'
-								className='px-3 py-1.5 rounded-lg text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition'
-							>
-								Dashboard
-							</Link>
-							<Link
-								href='/history'
-								className='px-3 py-1.5 rounded-lg text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition flex items-center gap-1.5'
-							>
+						<Link
+							href='/dashboard'
+							className='px-3 py-1.5 rounded-lg text-sm text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800 transition'
+						>
+							Dashboard
+						</Link>
+						<Link
+							href='/history'
+							className='px-3 py-1.5 rounded-lg text-sm text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800 transition flex items-center gap-1.5'
+						>
 								<History className='w-3.5 h-3.5' />
 								History
 							</Link>

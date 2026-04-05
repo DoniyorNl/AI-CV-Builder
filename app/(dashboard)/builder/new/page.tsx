@@ -25,22 +25,22 @@ export default function NewCVPage() {
 	return (
 		<div className='max-w-lg mx-auto'>
 			<div className='text-center mb-8'>
-				<div className='w-14 h-14 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-4'>
-					<Sparkles className='w-7 h-7 text-indigo-600' />
+				<div className='w-14 h-14 bg-indigo-100 dark:bg-indigo-900/40 rounded-2xl flex items-center justify-center mx-auto mb-4'>
+					<Sparkles className='w-7 h-7 text-indigo-600 dark:text-indigo-400' />
 				</div>
-				<h1 className='text-2xl font-bold text-gray-900'>Create New CV</h1>
-				<p className='text-gray-500 text-sm mt-2'>
+				<h1 className='text-2xl font-bold text-gray-900 dark:text-white'>Create New CV</h1>
+				<p className='text-gray-500 dark:text-slate-400 text-sm mt-2'>
 					Give your CV a name to get started. You can change it later.
 				</p>
 			</div>
 
-			<div className='bg-white rounded-2xl border border-gray-200 p-8'>
+			<div className='bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-8'>
 				<form onSubmit={handleSubmit(d => createCV(d.title))} className='space-y-5'>
 					<div>
-						<label className='block text-sm font-medium text-gray-700 mb-1.5'>CV Title</label>
+						<label className='block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1.5'>CV Title</label>
 						<input
 							{...register('title')}
-							className='w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
+							className='w-full border border-gray-300 dark:border-slate-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white bg-white dark:bg-slate-700 placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
 							placeholder='e.g. Software Engineer CV, Senior Designer Resume...'
 						/>
 						{errors.title && <p className='text-red-500 text-xs mt-1'>{errors.title.message}</p>}

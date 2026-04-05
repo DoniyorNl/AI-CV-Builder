@@ -6,9 +6,9 @@ import { Clock, Edit2, Eye, Layout, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 
 const TEMPLATE_COLORS = {
-	modern: 'bg-indigo-50 text-indigo-700',
-	minimal: 'bg-gray-100 text-gray-700',
-	classic: 'bg-amber-50 text-amber-700',
+	modern: 'bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300',
+	minimal: 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300',
+	classic: 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300',
 }
 
 export function CVCard({ cv }: { cv: CV }) {
@@ -44,11 +44,11 @@ export function CVCard({ cv }: { cv: CV }) {
 							{cv.template}
 						</span>
 						<span
-							className={`text-xs px-2 py-0.5 rounded-full ${
-								cv.status === 'published'
-									? 'bg-green-50 text-green-700'
-									: 'bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-400'
-							}`}
+						className={`text-xs px-2 py-0.5 rounded-full ${
+							cv.status === 'published'
+								? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+								: 'bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-400'
+						}`}
 						>
 							{cv.status}
 						</span>

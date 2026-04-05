@@ -8,7 +8,7 @@ export function ThemeToggle({ className }: { className?: string }) {
 	const { theme, toggle } = useTheme()
 	const [mounted, setMounted] = useState(false)
 
-	useEffect(() => setMounted(true), [])
+	useEffect(() => { setTimeout(() => setMounted(true), 0) }, [])
 
 	return (
 		<button

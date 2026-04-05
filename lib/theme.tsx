@@ -17,7 +17,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 	useEffect(() => {
 		// Sync with the class already applied by the anti-flash inline script
 		const isDark = document.documentElement.classList.contains('dark')
-		setTheme(isDark ? 'dark' : 'light')
+		setTimeout(() => setTheme(isDark ? 'dark' : 'light'), 0)
 	}, [])
 
 	const toggle = () => {

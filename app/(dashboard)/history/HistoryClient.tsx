@@ -221,7 +221,7 @@ export function HistoryClient() {
 					{/* Footer */}
 					<div className='px-6 py-3 border-t border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50'>
 						<p className='text-xs text-gray-400 dark:text-slate-500'>
-							{filtered.length} ta natija ko'rsatilmoqda
+							{filtered.length} ta natija ko&#39;rsatilmoqda
 							{search && ` "${search}" uchun`}
 						</p>
 					</div>

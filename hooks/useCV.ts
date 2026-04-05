@@ -2,8 +2,10 @@
 
 import { useAuthUser } from '@/lib/firebase/auth-provider'
 import { db } from '@/lib/firebase/client'
-import type { CV, CVData, CVSection, SectionType } from '@/types/cv.types'
+import type { CV, CVSection, SectionType } from '@/types/cv.types'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+
+export { sectionsToCVData } from '@/lib/cv-utils'
 import {
 	addDoc,
 	collection,
@@ -223,19 +225,3 @@ export function useDeleteCV() {
 	})
 }
 
-// ─── Build CVData from sections array ────────────────────────
-export function sectionsToCVData(sections: CVSection[]): CVData {
-	const get = <T>(type: SectionType, fallback: T): T => {
-		const section = sections.find(s => s.type === type)
-		return (section?.content as T) ?? fallback
-	}
-
-	return {
-		personal: get('personal', { full_name: '', email: '', phone: '', city: '', linkedin: '' }),
-		summary: get('summary', { text: '' }),
-		experience: get('experience', []),
-		education: get('education', []),
-		skills: get('skills', { technical: [], soft: [] }),
-		projects: get('projects', []),
-	}
-}

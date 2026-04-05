@@ -50,26 +50,28 @@ export default async function DashboardPage() {
 			label: 'Total CVs',
 			value: cvList.length.toString(),
 			icon: <FileText className='w-5 h-5' />,
-			color: 'bg-indigo-50 text-indigo-600',
+			color: 'bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400',
 		},
 		{
 			label: 'Published',
 			value: publishedCount.toString(),
 			icon: <TrendingUp className='w-5 h-5' />,
-			color: 'bg-green-50 text-green-600',
+			color: 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400',
 		},
 		{
 			label: 'Plan',
 			value: isPro ? 'Pro' : 'Free',
 			icon: <Sparkles className='w-5 h-5' />,
-			color: isPro ? 'bg-yellow-50 text-yellow-600' : 'bg-gray-100 text-gray-500',
+			color: isPro
+				? 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400'
+				: 'bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-400',
 			badge: !isPro,
 		},
 		{
 			label: 'Last Activity',
 			value: lastUpdated,
 			icon: <Clock className='w-5 h-5' />,
-			color: 'bg-purple-50 text-purple-600',
+			color: 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
 		},
 	]
 
@@ -79,9 +81,9 @@ export default async function DashboardPage() {
 			<div className='flex items-center justify-between mb-6'>
 				<div>
 					<h1 className='text-2xl font-bold text-gray-900 dark:text-white'>My CVs</h1>
-					<p className='text-gray-500 text-sm mt-1'>
-						{cvList.length} CV{cvList.length !== 1 ? 's' : ''} created
-					</p>
+				<p className='text-gray-500 dark:text-slate-400 text-sm mt-1'>
+					{cvList.length} CV{cvList.length !== 1 ? 's' : ''} created
+				</p>
 				</div>
 				<Link
 					href='/builder/new'
@@ -137,10 +139,10 @@ export default async function DashboardPage() {
 
 			{/* CV Grid */}
 			{cvList.length === 0 ? (
-				<div className='text-center py-24 border-2 border-dashed border-gray-200 rounded-2xl bg-white'>
-					<FileText className='w-12 h-12 text-gray-300 mx-auto mb-4' />
-					<h3 className='text-lg font-semibold text-gray-700 mb-2'>No CVs yet</h3>
-					<p className='text-gray-400 text-sm mb-6'>Create your first AI-powered CV in minutes</p>
+		<div className='text-center py-24 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-2xl bg-white dark:bg-slate-800/50'>
+				<FileText className='w-12 h-12 text-gray-300 dark:text-slate-600 mx-auto mb-4' />
+				<h3 className='text-lg font-semibold text-gray-700 dark:text-slate-200 mb-2'>No CVs yet</h3>
+				<p className='text-gray-400 dark:text-slate-500 text-sm mb-6'>Create your first AI-powered CV in minutes</p>
 					<Link
 						href='/builder/new'
 						className='bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-5 py-2.5 text-sm font-medium transition inline-flex items-center gap-2'

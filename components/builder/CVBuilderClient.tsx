@@ -10,6 +10,7 @@ import {
 	CheckCircle2,
 	ChevronLeft,
 	ChevronRight,
+	Download,
 	Eye,
 	EyeOff,
 	FolderGit2,
@@ -58,6 +59,7 @@ export function CVBuilderClient({ cv, sections }: Props) {
 	const [cvData, setCvData] = useState<CVData>(() => sectionsToCVData(sections))
 	const [showPreview, setShowPreview] = useState(true)
 	const [liveTemplate, setLiveTemplate] = useState<Template>(cv.template)
+	const [downloading, setDownloading] = useState(false)
 
 	const { mutateAsync: updateSection } = useUpdateSection(cv.id)
 	const { mutate: updateCVMeta } = useUpdateCV(cv.id)
@@ -100,6 +102,37 @@ export function CVBuilderClient({ cv, sections }: Props) {
 			},
 		},
 	)
+
+	const handleDownload = async () => {
+		setDownloading(true)
+		try {
+			// Avval pending o'zgarishlarni saqlash
+			await flush()
+			// Server tarafda save bo'lishi uchun biroz kutish
+			await new Promise(r => setTimeout(r, 600))
+
+			const res = await fetch(`/api/cv/export?id=${cv.id}&template=${liveTemplate}`)
+			if (!res.ok) {
+				const data = await res.json().catch(() => ({}))
+				throw new Error((data as { error?: string }).error ?? 'Export failed')
+			}
+			const blob = await res.blob()
+			const url = URL.createObjectURL(blob)
+			const a = document.createElement('a')
+			a.href = url
+			a.download = `${cv.title.replace(/\s+/g, '-')}.pdf`
+			document.body.appendChild(a)
+			a.click()
+			document.body.removeChild(a)
+			URL.revokeObjectURL(url)
+			toast.success('PDF muvaffaqiyatli yuklandi!')
+		} catch (err) {
+			const msg = err instanceof Error ? err.message : 'Noma\'lum xato'
+			toast.error(`PDF yuklab bo'lmadi: ${msg}`)
+		} finally {
+			setDownloading(false)
+		}
+	}
 
 	const updateData = <K extends keyof CVData>(key: K, value: CVData[K]) => {
 		setCvData(prev => ({ ...prev, [key]: value }))
@@ -151,25 +184,44 @@ export function CVBuilderClient({ cv, sections }: Props) {
 							)}
 						</div>
 
-						<Link
-							href={`/builder/${cv.id}/preview`}
-							onClick={() => flush()}
-							className='w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl py-2.5 text-sm font-medium transition'
-						>
-							<Eye className='w-4 h-4' />
-							Full Preview
-						</Link>
-						<button
-							onClick={() => setShowPreview(v => !v)}
-							className='hidden lg:flex w-full items-center justify-center gap-2 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-600 dark:text-slate-400 rounded-xl py-2 text-sm font-medium transition'
-						>
-							{showPreview ? (
-								<EyeOff className='w-4 h-4' />
-							) : (
-								<LayoutTemplate className='w-4 h-4' />
-							)}
-							{showPreview ? 'Hide Preview' : 'Show Preview'}
-						</button>
+					{/* Save & Download PDF */}
+					<button
+						onClick={handleDownload}
+						disabled={downloading || saveStatus === 'saving'}
+						className='w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white rounded-xl py-2.5 text-sm font-medium transition'
+					>
+						{downloading ? (
+							<>
+								<Loader2 className='w-4 h-4 animate-spin' />
+								Yuklanmoqda…
+							</>
+						) : (
+							<>
+								<Download className='w-4 h-4' />
+								Save & Download PDF
+							</>
+						)}
+					</button>
+
+					<Link
+						href={`/builder/${cv.id}/preview`}
+						onClick={() => flush()}
+						className='w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl py-2.5 text-sm font-medium transition'
+					>
+						<Eye className='w-4 h-4' />
+						Full Preview
+					</Link>
+					<button
+						onClick={() => setShowPreview(v => !v)}
+						className='hidden lg:flex w-full items-center justify-center gap-2 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-600 dark:text-slate-400 rounded-xl py-2 text-sm font-medium transition'
+					>
+						{showPreview ? (
+							<EyeOff className='w-4 h-4' />
+						) : (
+							<LayoutTemplate className='w-4 h-4' />
+						)}
+						{showPreview ? 'Hide Preview' : 'Show Preview'}
+					</button>
 					</div>
 				</div>
 			</aside>

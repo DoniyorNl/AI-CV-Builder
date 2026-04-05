@@ -113,7 +113,7 @@ export default function SettingsPage() {
 					{/* Full name */}
 					<div>
 						<label className='block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5'>
-							To'liq ism
+							To&#39;liq ism
 						</label>
 						<div className='flex gap-3'>
 							<input
@@ -149,7 +149,7 @@ export default function SettingsPage() {
 							disabled
 							className='w-full border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm bg-gray-50 dark:bg-slate-700/50 text-gray-400 dark:text-slate-500 cursor-not-allowed'
 						/>
-						<p className='text-xs text-gray-400 dark:text-slate-500 mt-1'>Email o'zgartirilmaydi</p>
+						<p className='text-xs text-gray-400 dark:text-slate-500 mt-1'>Email o&#39;zgartirilmaydi</p>
 					</div>
 				</div>
 			</div>
@@ -227,8 +227,8 @@ export default function SettingsPage() {
 				</div>
 
 				<p className='text-sm text-gray-600 dark:text-slate-400 mb-4'>
-					Hisobingizni va barcha CV ma'lumotlaringizni butunlay o'chirib tashlaydi. Bu amalni{' '}
-					<strong>qaytarib bo'lmaydi</strong>.
+					Hisobingizni va barcha CV ma&#39;lumotlaringizni butunlay o&#39;chirib tashlaydi. Bu amalni{' '}
+					<strong>qaytarib bo&#39;lmaydi</strong>.
 				</p>
 
 				<div className='space-y-3'>
@@ -254,7 +254,7 @@ export default function SettingsPage() {
 						) : (
 							<Trash2 className='w-4 h-4' />
 						)}
-						Hisobni o'chirish
+						Hisobni o&#39;chirish
 					</button>
 				</div>
 			</div>

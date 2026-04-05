@@ -106,7 +106,7 @@ export function useSpeechInput({
 	// Detect support once on mount (SSR-safe)
 	useEffect(() => {
 		const SR = window.SpeechRecognition ?? window.webkitSpeechRecognition
-		setIsSupported(typeof SR === 'function')
+		setTimeout(() => setIsSupported(typeof SR === 'function'), 0)
 	}, [])
 
 	const start = useCallback(() => {
